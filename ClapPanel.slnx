@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ClapPanel/ClapPanel.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ClapPanel.Tests/ClapPanel.Tests.csproj" />
+  </Folder>
+</Solution>
