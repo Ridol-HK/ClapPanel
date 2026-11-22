@@ -155,11 +155,13 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     public void ApplyAppearance(AppearanceSettings appearance, int? columns = null, Point? customPosition = null)
     {
-        var wasVerticalDocked = _isVerticalDocked;
+        var wasFullScreen = _appearance.FullScreen;
+        var wasVerticalLayout = UsesVerticalLayout;
         var oldAnimationStyle = _appearance.AnimationStyle;
         _appearance = appearance.Clone();
         _customPosition = customPosition;
         _isVerticalDocked = IsVerticalDockEdge(_appearance.DockEdge);
+        var usesVerticalLayout = UsesVerticalLayout;
         if (columns.HasValue)
         {
             _configuredColumns = columns.Value;
@@ -167,9 +169,36 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
         if (_uiReady)
         {
-            if (_initialSizingCompleted && wasVerticalDocked != _isVerticalDocked)
+            if (_initialSizingCompleted && wasFullScreen != _appearance.FullScreen)
             {
-                if (_isVerticalDocked)
+                // Keep the last normal dimensions while the full-screen mode is active,
+                // so leaving it restores the appropriate horizontal/vertical layout.
+                if (_appearance.FullScreen)
+                {
+                    if (wasVerticalLayout)
+                    {
+                        _preferredVerticalSize = CurrentWindowSize();
+                    }
+                    else
+                    {
+                        _preferredHorizontalSize = CurrentWindowSize();
+                    }
+
+                    UpdateDockLayout();
+                    ApplyFullScreenBounds();
+                }
+                else
+                {
+                    UpdateDockLayout();
+                    var restoredSize = usesVerticalLayout
+                        ? _preferredVerticalSize ?? CreateDefaultVerticalSize()
+                        : _preferredHorizontalSize ?? CreateDefaultHorizontalSize();
+                    SetWindowSize(restoredSize);
+                }
+            }
+            else if (_initialSizingCompleted && wasVerticalLayout != usesVerticalLayout)
+            {
+                if (usesVerticalLayout)
                 {
                     _preferredHorizontalSize ??= CurrentWindowSize();
                     UpdateDockLayout();
@@ -189,15 +218,15 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         }
         else
         {
-            IconSize = _isVerticalDocked
+            IconSize = UsesVerticalLayout
                 ? Math.Min(AppearanceLayout.IconSize(_appearance), 32)
                 : AppearanceLayout.IconSize(_appearance);
-            TileSize = _isVerticalDocked
+            TileSize = UsesVerticalLayout
                 ? Math.Min(AppearanceLayout.TileSize(_appearance), 76)
                 : AppearanceLayout.TileSize(_appearance);
             NameWidth = TileSize - 12;
             NameVisibility = _appearance.ShowNames ? Visibility.Visible : Visibility.Collapsed;
-            PanelRadius = AppearanceLayout.PanelRadius(_appearance);
+            PanelRadius = _appearance.FullScreen ? new CornerRadius(0) : AppearanceLayout.PanelRadius(_appearance);
             TileRadius = AppearanceLayout.TileRadius(_appearance);
         }
 
@@ -210,7 +239,6 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         InvalidateMeasure();
         UpdateLayout();
         QueueReposition();
-
 
         if (oldAnimationStyle != _appearance.AnimationStyle && _appearance.AnimationStyle != PanelAnimationStyle.None)
         {
@@ -336,13 +364,13 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void RecalculateColumns(int itemCount)
     {
-        var workArea = GetSelectedWorkArea();
-        MaxWidth = Math.Max(1, workArea.Width - 2 * Gap);
-        MaxHeight = Math.Max(1, workArea.Height - 2 * Gap);
-        MinWidth = Math.Min(_isVerticalDocked ? 150 : 240, MaxWidth);
-        MinHeight = Math.Min(140, MaxHeight);
+        var workArea = _appearance.FullScreen ? GetSelectedScreenBounds() : GetSelectedWorkArea();
+        MaxWidth = Math.Max(1, workArea.Width - (_appearance.FullScreen ? 0 : 2 * Gap));
+        MaxHeight = Math.Max(1, workArea.Height - (_appearance.FullScreen ? 0 : 2 * Gap));
+        MinWidth = _appearance.FullScreen ? 1 : Math.Min(UsesVerticalLayout ? 150 : 240, MaxWidth);
+        MinHeight = _appearance.FullScreen ? 1 : Math.Min(140, MaxHeight);
 
-        if (_isVerticalDocked)
+        if (UsesVerticalLayout)
         {
             Columns = 1;
             return;
@@ -362,6 +390,10 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private static bool IsVerticalDockEdge(PanelDockEdge edge) =>
         edge is PanelDockEdge.Left or PanelDockEdge.Right;
+
+    // Full-screen mode always uses the normal horizontal content layout, even
+    // when the saved docking preference is a vertical screen edge.
+    private bool UsesVerticalLayout => !_appearance.FullScreen && _isVerticalDocked;
 
     private Size CurrentWindowSize() => new(
         double.IsFinite(Width) && Width > 0 ? Width : Math.Max(150, ActualWidth),
@@ -388,7 +420,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         var area = GetSelectedWorkArea();
         var maxWidth = Math.Max(150, area.Width - 2 * Gap);
         var maxHeight = Math.Max(140, area.Height - 2 * Gap);
-        var minWidth = Math.Min(_isVerticalDocked ? 150 : 240, maxWidth);
+        var minWidth = Math.Min(UsesVerticalLayout ? 150 : 240, maxWidth);
         var minHeight = Math.Min(140, maxHeight);
         MinWidth = minWidth;
         MinHeight = minHeight;
@@ -407,26 +439,28 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        ToolbarPanel.Orientation = _isVerticalDocked ? Orientation.Vertical : Orientation.Horizontal;
-        SearchBox.Width = _isVerticalDocked ? Math.Max(100, (double.IsFinite(Width) && Width > 0 ? Width : 180) - 42) : 145;
-        CategoryCombo.Width = _isVerticalDocked ? Math.Max(100, (double.IsFinite(Width) && Width > 0 ? Width : 180) - 42) : 105;
-        IconSize = _isVerticalDocked
+        ToolbarPanel.Orientation = UsesVerticalLayout ? Orientation.Vertical : Orientation.Horizontal;
+        SearchBox.Width = UsesVerticalLayout ? Math.Max(100, (double.IsFinite(Width) && Width > 0 ? Width : 180) - 42) : 145;
+        CategoryCombo.Width = UsesVerticalLayout ? Math.Max(100, (double.IsFinite(Width) && Width > 0 ? Width : 180) - 42) : 105;
+        IconSize = UsesVerticalLayout
             ? Math.Min(AppearanceLayout.IconSize(_appearance), 32)
             : AppearanceLayout.IconSize(_appearance);
-        TileSize = _isVerticalDocked
+        TileSize = UsesVerticalLayout
             ? Math.Min(AppearanceLayout.TileSize(_appearance), 76)
             : AppearanceLayout.TileSize(_appearance);
         NameWidth = TileSize - 12;
         NameVisibility = _appearance.ShowNames ? Visibility.Visible : Visibility.Collapsed;
-        PanelRadius = AppearanceLayout.PanelRadius(_appearance);
+        PanelRadius = _appearance.FullScreen ? new CornerRadius(0) : AppearanceLayout.PanelRadius(_appearance);
         TileRadius = AppearanceLayout.TileRadius(_appearance);
+        PanelBorder.Margin = _appearance.FullScreen ? new Thickness(0) : new Thickness(6);
+        UpdateFullScreenChrome();
         RecalculateColumns(_tiles.Count);
         NotifyAppearanceProperties();
     }
 
     private void UpdateToolbarControlWidths()
     {
-        if (!_uiReady || !_isVerticalDocked)
+        if (!_uiReady || !UsesVerticalLayout)
         {
             return;
         }
@@ -446,11 +480,19 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
         var naturalSize = new Size(Math.Max(150, ActualWidth), Math.Max(140, ActualHeight));
         SizeToContent = System.Windows.SizeToContent.Manual;
-        var requested = _isVerticalDocked
+        if (_appearance.FullScreen)
+        {
+            _initialSizingCompleted = true;
+            UpdateDockLayout();
+            ApplyFullScreenBounds();
+            return;
+        }
+
+        var requested = UsesVerticalLayout
             ? _preferredVerticalSize ?? CreateDefaultVerticalSize()
             : _preferredHorizontalSize ?? naturalSize;
 
-        if (_isVerticalDocked)
+        if (UsesVerticalLayout)
         {
             _preferredVerticalSize ??= requested;
         }
@@ -464,10 +506,11 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         UpdateDockLayout();
         UpdateLayout();
         PlacePanel();
-        if (_isVerticalDocked)
+        if (UsesVerticalLayout)
         {
-            Left = DockPanelToEdge(_appearance.DockEdge).X;
-            Top = DockPanelToEdge(_appearance.DockEdge).Y;
+            var dockedPosition = DockPanelToEdge(_appearance.DockEdge);
+            Left = dockedPosition.X;
+            Top = dockedPosition.Y;
         }
     }
 
@@ -605,20 +648,44 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void Settings_Click(object sender, RoutedEventArgs e) => _settingsRequested();
 
+    private void ClosePanel_Click(object sender, RoutedEventArgs e) => CloseWithAnimation();
+
+    private void PanelWindow_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (!_appearance.FullScreen || e.Key != Key.Escape)
+        {
+            return;
+        }
+
+        // Let users clear the search first; a second Escape closes the full-screen menu.
+        if (!string.IsNullOrEmpty(SearchBox.Text))
+        {
+            SearchBox.Clear();
+        }
+        else
+        {
+            CloseWithAnimation();
+        }
+
+        e.Handled = true;
+    }
+
     private void UpdateMoveHandle()
     {
         if (MoveHandle is not null)
         {
-            MoveHandle.Cursor = _allowPanelMovement ? Cursors.SizeAll : Cursors.Arrow;
-            MoveHandle.ToolTip = _allowPanelMovement
-                ? "Arrastrar para mover el panel"
-                : "El movimiento del panel está desactivado en Ajustes > General";
+            MoveHandle.Cursor = _allowPanelMovement && !_appearance.FullScreen ? Cursors.SizeAll : Cursors.Arrow;
+            MoveHandle.ToolTip = _appearance.FullScreen
+                ? "Pantalla completa: pulsa Esc para cerrar el menú"
+                : _allowPanelMovement
+                    ? "Arrastrar para mover el panel"
+                    : "El movimiento del panel está desactivado en Ajustes > General";
         }
     }
 
     private void MoveHandle_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (!_allowPanelMovement || e.ChangedButton != MouseButton.Left)
+        if (_appearance.FullScreen || !_allowPanelMovement || e.ChangedButton != MouseButton.Left)
         {
             return;
         }
@@ -679,7 +746,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void Resize_DragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (!_initialSizingCompleted || sender is not Thumb thumb || thumb.Tag is not string grip)
+        if (_appearance.FullScreen || !_initialSizingCompleted || sender is not Thumb thumb || thumb.Tag is not string grip)
         {
             return;
         }
@@ -765,7 +832,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void Resize_DragCompleted(object sender, DragCompletedEventArgs e)
     {
-        if (!_initialSizingCompleted)
+        if (_appearance.FullScreen || !_initialSizingCompleted)
         {
             return;
         }
@@ -795,6 +862,12 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void PlacePanel()
     {
+        if (_appearance.FullScreen)
+        {
+            ApplyFullScreenBounds();
+            return;
+        }
+
         if (_appearance.DockEdge != PanelDockEdge.None)
         {
             var desiredDocked = DockPanelToEdge(_appearance.DockEdge);
@@ -814,6 +887,66 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         }
 
         PositionPanel();
+    }
+
+    private Rect GetSelectedScreenBounds()
+    {
+        var screens = Forms.Screen.AllScreens;
+        var selected = screens.FirstOrDefault(screen =>
+            string.Equals(screen.DeviceName, _appearance.MonitorDeviceName, StringComparison.OrdinalIgnoreCase));
+        selected ??= Forms.Screen.PrimaryScreen ?? screens.FirstOrDefault();
+
+        if (selected is null)
+        {
+            return new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop,
+                SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
+        }
+
+        var dpiScale = GetMonitorDpiScale(selected);
+        var bounds = selected.Bounds;
+        return new Rect(bounds.Left / dpiScale, bounds.Top / dpiScale, bounds.Width / dpiScale, bounds.Height / dpiScale);
+    }
+
+    private void ApplyFullScreenBounds()
+    {
+        if (!_appearance.FullScreen)
+        {
+            return;
+        }
+
+        var bounds = GetSelectedScreenBounds();
+        WindowState = System.Windows.WindowState.Normal;
+        MinWidth = 1;
+        MinHeight = 1;
+        MaxWidth = Math.Max(1, bounds.Width);
+        MaxHeight = Math.Max(1, bounds.Height);
+        Width = Math.Max(1, bounds.Width);
+        Height = Math.Max(1, bounds.Height);
+        Left = bounds.Left;
+        Top = bounds.Top;
+        PanelBorder.Margin = new Thickness(0);
+        PanelRadius = new CornerRadius(0);
+        UpdateLayout();
+    }
+
+    private void UpdateFullScreenChrome()
+    {
+        if (!_uiReady)
+        {
+            return;
+        }
+
+        var resizeVisibility = _appearance.FullScreen ? Visibility.Collapsed : Visibility.Visible;
+        ClosePanelButton.Visibility = _appearance.FullScreen ? Visibility.Visible : Visibility.Collapsed;
+        LeftResizeThumb.Visibility = resizeVisibility;
+        RightResizeThumb.Visibility = resizeVisibility;
+        TopResizeThumb.Visibility = resizeVisibility;
+        BottomResizeThumb.Visibility = resizeVisibility;
+        TopLeftResizeThumb.Visibility = resizeVisibility;
+        TopRightResizeThumb.Visibility = resizeVisibility;
+        BottomLeftResizeThumb.Visibility = resizeVisibility;
+        BottomRightResizeThumb.Visibility = resizeVisibility;
+        UpdateMoveHandle();
     }
 
     private Rect GetSelectedWorkArea()
@@ -910,6 +1043,16 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void UpdateAutoHideTimer()
     {
+        if (_appearance.FullScreen)
+        {
+            _autoHideTimer.Stop();
+            if (_isAutoHidden)
+            {
+                RevealFromAutoHide();
+            }
+            return;
+        }
+
         if (_appearance.AutoHide)
         {
             _lastInteractionUtc = DateTime.UtcNow;
@@ -927,7 +1070,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void AutoHideTimer_Tick(object? sender, EventArgs e)
     {
-        if (!_appearance.AutoHide || _autoHideSuspended || _isClosingAnimated)
+        if (_appearance.FullScreen || !_appearance.AutoHide || _autoHideSuspended || _isClosingAnimated)
         {
             return;
         }
@@ -951,7 +1094,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void HideForAutoHide()
     {
-        if (_isAutoHidden || !IsVisible)
+        if (_appearance.FullScreen || _isAutoHidden || !IsVisible)
         {
             return;
         }

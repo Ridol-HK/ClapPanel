@@ -2,38 +2,51 @@
 
 Aplicación para Windows 10/11 que abre y cierra un panel de accesos directos al detectar un doble aplauso.
 
+## Características
+
+- Detección de doble aplauso que distingue el aplauso de la voz y del ruido ambiente.
+- Panel de accesos directos con carpetas, categorías, favoritos y buscador.
+- Apariencia personalizable con perfiles, y panel móvil, redimensionable y acoplable.
+- Calibración asistida del micrófono.
+- Inicio opcional con Windows e icono en la bandeja del sistema.
+
 ## Requisitos
 
-- .NET 10 SDK
+- Windows 10 u 11 y un micrófono.
+- Para compilar desde el código: .NET 10 SDK.
 
-## Compilar y ejecutar
+## Instalación
+
+### Ejecutable
+
+1. Descarga `ClapPanel-vX.Y.Z-win-x64.zip` desde la sección Releases del repositorio.
+2. Extrae el contenido y ejecuta `ClapPanel.exe`.
+
+No hace falta instalar .NET. Como el ejecutable no está firmado, Windows SmartScreen puede mostrar un aviso: elige «Más información» y luego «Ejecutar de todos modos».
+
+### Desde el código
 
 ```
 dotnet run --project src/ClapPanel
 ```
 
-## Probar
+Para generar el ejecutable:
 
 ```
-dotnet test
-```
-
-## Publicar
-
-```
-dotnet publish src/ClapPanel -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
+dotnet publish src/ClapPanel -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 ## Uso
 
 - Doble aplauso: abre el panel; con el panel abierto, lo cierra.
-- Icono de bandeja: abrir o cerrar panel, abrir ajustes, pausar la captura del micrófono y salir.
+- Icono de bandeja: abrir o cerrar el panel, abrir ajustes, pausar la captura del micrófono y salir.
 - Clic en un icono: abre su destino sin cerrar el panel. Las carpetas internas de ClapPanel se despliegan dentro del mismo panel.
 - Botón «⋯»: abre directamente la pestaña de apariencia.
 - Barra superior «ClapPanel»: permite arrastrar el panel cuando el movimiento está habilitado. Al acercarlo a los bordes izquierdo o derecho, se acopla y cambia a una disposición vertical de una columna.
 - Bordes y esquinas del panel: permiten cambiar su tamaño arrastrando el cursor; los tamaños horizontal y vertical se guardan por monitor.
 - Arrastrar un icono sobre otro lo reordena; arrastrarlo sobre una carpeta lo mueve a esa carpeta. Soltarlo en el espacio vacío lo lleva al final de su lista.
 - Arrastrar ejecutables, accesos directos, archivos o carpetas de Windows al panel crea accesos directos. Al soltar sobre una carpeta interna, el acceso se agrega a esa carpeta.
+- Pantalla completa: pulsa Esc para limpiar primero la búsqueda y luego cerrar el menú, o usa el botón ×.
 
 ## Organización de aplicaciones
 
@@ -48,17 +61,30 @@ Los accesos directos admiten destino, argumentos y una imagen opcional. Los dest
 
 ## Ajustes
 
-- Micrófono, sensibilidad, calibración e inicio con Windows.
-- En General: permitir o bloquear el movimiento manual del panel, detener la captura del micrófono, restablecer los valores predeterminados o cerrar ClapPanel.
-- El restablecimiento elimina también accesos directos y perfiles personalizados.
-- Columnas del panel, accesos directos, carpetas, categorías, favoritos e imágenes.
-- Apariencia en vivo: tema, fondo, acento, opacidad, transparencia dinámica, tamaño de iconos, nombres, esquinas y animaciones. La ventana de ajustes, sus pestañas, botones, campos y listas adoptan la misma paleta del panel.
-- Perfiles visuales: guardar, aplicar y eliminar combinaciones de apariencia y columnas.
-- Posición y monitores: elegir el monitor, usar una esquina o el centro, o acoplar el panel a uno de los bordes. El acoplamiento a izquierda o derecha cambia el panel a formato vertical. Se conservan la posición y los tamaños horizontal/vertical por monitor.
-- Tamaño manual: arrastrar cualquier borde o esquina para agrandar o reducir el panel. El contenido se reorganiza según el ancho disponible.
-- Ocultamiento automático: el panel se esconde tras el tiempo configurado y vuelve a aparecer al acercar el puntero al borde asociado a su posición o acoplamiento.
+La ventana de ajustes tiene cuatro pestañas: General, Micrófono, Apariencia e Iconos y carpetas. Sus pestañas, botones, campos y listas adoptan la misma paleta del panel. Los cambios de apariencia se previsualizan mientras se editan: Guardar conserva todos los ajustes; Cancelar o cerrar la ventana revierte la vista previa.
 
-Los cambios de apariencia se previsualizan mientras se editan. Guardar conserva todos los ajustes; Cancelar o cerrar la ventana revierte la vista previa.
+### General y micrófono
+
+- Inicio con Windows.
+- Permitir o bloquear el movimiento manual del panel, detener la captura del micrófono, restablecer los valores predeterminados o cerrar ClapPanel. El restablecimiento elimina también accesos directos y perfiles personalizados.
+- Selección del micrófono, sensibilidad y calibración.
+
+### Apariencia
+
+- Tema del sistema, claro u oscuro; color de fondo y color de acento.
+- Opacidad base y reducción de opacidad cuando el puntero no está sobre el panel.
+- Tamaño de iconos, nombres visibles y esquinas redondeadas.
+- Animación configurable: ninguna, desvanecer, escala, deslizar, entrada desde arriba, zoom con rebote suave o rebote ligero.
+- Columnas del panel.
+- Perfiles visuales que guardan y restauran la apariencia, el número de columnas y el modo de pantalla completa.
+
+### Posición y monitores
+
+- Selección del monitor. Cada pantalla conserva su última posición manual y sus tamaños horizontal y vertical.
+- Posición inicial en cualquiera de las cuatro esquinas o el centro.
+- Acoplamiento opcional a los bordes izquierdo, derecho, superior o inferior. El acoplamiento a izquierda o derecha cambia el panel a formato vertical.
+- Pantalla completa: el menú ocupa todo el monitor seleccionado. En este modo se desactivan el movimiento, el redimensionamiento y el ocultamiento automático.
+- Ocultamiento automático configurable entre 1 y 30 segundos. El panel vuelve a aparecer al acercar el puntero al borde asociado a su posición o acoplamiento, o al más cercano a su ubicación actual.
 
 ## Calibración
 
@@ -70,23 +96,6 @@ En Ajustes, pestaña Micrófono, el botón Calibrar abre un asistente de tres pa
 
 El asistente calcula la sensibilidad y la comprueba reproduciendo lo grabado con el detector real. Muestra cuántos dobles aplausos reconoce y si hay falsos disparos. Al aplicarla se actualiza el valor de sensibilidad y hay que pulsar Guardar.
 
-## Apariencia y perfiles
-
-En Ajustes → Apariencia, los cambios se aplican como vista previa mientras se editan:
-
-- Tema del sistema, claro u oscuro; color de fondo y color de acento.
-- Opacidad base y reducción de opacidad cuando el puntero no está sobre el panel.
-- Tamaño de iconos, nombres visibles y esquinas redondeadas.
-- Animación configurable: ninguna, desvanecer, escala, deslizar, entrada desde arriba, zoom con rebote suave o rebote ligero.
-- Posición inicial en cualquiera de las cuatro esquinas o el centro.
-- Acoplamiento opcional a los bordes izquierdo, derecho, superior o inferior.
-- Ocultamiento automático configurable entre 1 y 30 segundos. Para volver a mostrarlo, acerca el puntero al borde asociado con el acoplamiento o más cercano a la ubicación actual.
-- Selección del monitor. Cada pantalla conserva su última posición manual personalizada.
-- Perfiles visuales que guardan y restauran la apariencia y el número de columnas.
-- Los botones y pestañas tienen realimentación visual discreta al pasar el cursor y al seleccionar una sección, sin imágenes ni dependencias adicionales.
-
-El botón «⋯» del panel abre directamente esta pestaña. Guardar conserva los cambios; Cancelar o cerrar la ventana revierte la vista previa.
-
 ## Detección
 
 - Se filtran los graves (voz) antes de analizar el sonido.
@@ -95,6 +104,33 @@ El botón «⋯» del panel abre directamente esta pestaña. Guardar conserva lo
 - Los dos aplausos deben tener una fuerza parecida.
 - El umbral se adapta al ruido ambiente y nunca baja del nivel fijado por la sensibilidad.
 - Los parámetros avanzados están en la sección `Detection` de `settings.json`.
+
+## Estructura del proyecto
+
+```
+ClapPanel/
+├── src/ClapPanel/
+│   ├── Audio/         captura del micrófono
+│   ├── Calibration/   asistente de calibración
+│   ├── Detection/     filtro y detector de doble aplauso
+│   ├── Launcher/      apertura de destinos, imágenes e iconos
+│   ├── Resources/     tema visual compartido
+│   ├── Settings/      modelos y almacenamiento de la configuración
+│   ├── Startup/       inicio con Windows
+│   ├── Theming/       paleta, diseño y posición del panel
+│   ├── Tray/          icono de la bandeja
+│   └── Views/         panel, ajustes, calibración y diálogos
+├── tests/ClapPanel.Tests/
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
+```
+
+## Pruebas
+
+```
+dotnet test
+```
 
 ## Licencia
 

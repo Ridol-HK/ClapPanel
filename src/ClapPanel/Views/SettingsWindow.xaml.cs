@@ -151,6 +151,7 @@ public partial class SettingsWindow : Window
         IconSizeSlider.Value = AppearanceLayout.IconSize(appearance);
         ShowNamesCheck.IsChecked = appearance.ShowNames;
         RoundedCheck.IsChecked = appearance.RoundedCorners;
+        FullScreenCheck.IsChecked = appearance.FullScreen;
         var animationStyle = appearance.Animation ? appearance.AnimationStyle : PanelAnimationStyle.None;
         SelectByTag(AnimationStyleCombo, animationStyle.ToString());
         SelectByTag(PositionCombo, appearance.Position.ToString());
@@ -284,6 +285,7 @@ public partial class SettingsWindow : Window
             IconSize = (int)IconSizeSlider.Value,
             ShowNames = ShowNamesCheck.IsChecked == true,
             RoundedCorners = RoundedCheck.IsChecked == true,
+            FullScreen = FullScreenCheck.IsChecked == true,
             Position = ParseEnum(SelectedTag(PositionCombo), PanelPosition.BottomRight),
             AnimationStyle = ParseEnum(SelectedTag(AnimationStyleCombo), PanelAnimationStyle.Scale),
             Animation = ParseEnum(SelectedTag(AnimationStyleCombo), PanelAnimationStyle.Scale) != PanelAnimationStyle.None,
@@ -419,6 +421,7 @@ public partial class SettingsWindow : Window
         IconSizeSlider.Value = AppearanceLayout.IconSize(appearance);
         ShowNamesCheck.IsChecked = appearance.ShowNames;
         RoundedCheck.IsChecked = appearance.RoundedCorners;
+        FullScreenCheck.IsChecked = appearance.FullScreen;
         DynamicTransparencyCheck.IsChecked = appearance.DynamicTransparency;
         InactiveOpacitySlider.Value = appearance.InactiveOpacity * 100;
         SelectByTag(AnimationStyleCombo, appearance.AnimationStyle.ToString());
@@ -577,6 +580,7 @@ public partial class SettingsWindow : Window
         IconSizeSlider.Value = AppearanceLayout.IconSize(appearance);
         ShowNamesCheck.IsChecked = appearance.ShowNames;
         RoundedCheck.IsChecked = appearance.RoundedCorners;
+        FullScreenCheck.IsChecked = appearance.FullScreen;
         SelectByTag(AnimationStyleCombo, (appearance.Animation ? appearance.AnimationStyle : PanelAnimationStyle.None).ToString());
         SelectByTag(PositionCombo, appearance.Position.ToString());
         SelectByTag(DockEdgeCombo, appearance.DockEdge.ToString());

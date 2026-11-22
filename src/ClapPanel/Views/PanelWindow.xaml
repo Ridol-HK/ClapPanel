@@ -21,7 +21,8 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
         WindowStartupLocation="Manual"
         AllowDrop="True"
         DragOver="Panel_DragOver"
-        Drop="Panel_Drop">
+        Drop="Panel_Drop"
+        KeyDown="PanelWindow_KeyDown">
     <Window.Resources>
         <Style x:Key="TileButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource TileBrush}" />
@@ -157,6 +158,7 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Border x:Name="MoveHandle"
                         Grid.Column="0"
@@ -172,12 +174,20 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                 </Border>
-                <Button Grid.Column="1"
+                <Button x:Name="SettingsButton"
+                        Grid.Column="1"
                         Content="⋯"
                         HorizontalAlignment="Right"
                         Style="{StaticResource PanelActionButtonStyle}"
                         ToolTip="Personalizar panel"
                         Click="Settings_Click" />
+                <Button x:Name="ClosePanelButton"
+                        Grid.Column="2"
+                        Content="×"
+                        HorizontalAlignment="Right"
+                        Style="{StaticResource PanelActionButtonStyle}"
+                        ToolTip="Cerrar menú (Esc)"
+                        Click="ClosePanel_Click" />
             </Grid>
 
             <StackPanel x:Name="ToolbarPanel" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,7">
@@ -308,28 +318,28 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
     </Border>
 
     <!-- Invisible resize handles: the cursor changes when the user approaches an edge or corner. -->
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="Left" Width="8" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,14"
+    <Thumb x:Name="LeftResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Left" Width="8" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,14"
            Background="Transparent" Cursor="SizeWE" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="Right" Width="8" HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,14"
+    <Thumb x:Name="RightResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Right" Width="8" HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,14"
            Background="Transparent" Cursor="SizeWE" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="Top" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="14,0"
+    <Thumb x:Name="TopResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Top" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="14,0"
            Background="Transparent" Cursor="SizeNS" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="Bottom" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="14,0"
+    <Thumb x:Name="BottomResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Bottom" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="14,0"
            Background="Transparent" Cursor="SizeNS" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="TopLeft" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Top"
+    <Thumb x:Name="TopLeftResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="TopLeft" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Top"
            Background="Transparent" Cursor="SizeNWSE" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="TopRight" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top"
+    <Thumb x:Name="TopRightResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="TopRight" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top"
            Background="Transparent" Cursor="SizeNESW" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="BottomLeft" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+    <Thumb x:Name="BottomLeftResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="BottomLeft" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Bottom"
            Background="Transparent" Cursor="SizeNESW" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
-    <Thumb Style="{StaticResource ResizeThumbStyle}" Tag="BottomRight" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+    <Thumb x:Name="BottomRightResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="BottomRight" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom"
            Background="Transparent" Cursor="SizeNWSE" ToolTip="Arrastrar para cambiar el tamaño"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     </Grid>

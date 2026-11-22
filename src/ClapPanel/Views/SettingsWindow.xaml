@@ -156,6 +156,11 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                         <TextBlock Text="Monitor" Margin="0,8,0,0" />
                         <ComboBox x:Name="MonitorCombo" DisplayMemberPath="DisplayName" SelectedValuePath="DeviceName" Margin="0,6,0,12" SelectionChanged="Appearance_Changed" />
 
+                        <CheckBox x:Name="FullScreenCheck" Content="Mostrar el menú en pantalla completa" Margin="0,2,0,4"
+                                  Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="El menú ocupará toda la pantalla del monitor seleccionado. Pulsa Esc para cerrarlo."
+                                   Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="22,0,0,12" />
+
                         <TextBlock Text="Posición inicial" />
                         <ComboBox x:Name="PositionCombo" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
                             <ComboBoxItem Content="Esquina inferior derecha" Tag="BottomRight" />

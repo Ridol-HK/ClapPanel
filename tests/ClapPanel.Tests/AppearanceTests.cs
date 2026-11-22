@@ -116,6 +116,25 @@ public class AppearanceTests
         Assert.Equal(68, AppearanceLayout.TileSize(new AppearanceSettings { IconSize = 40, ShowNames = false }));
     }
 
+
+    [Fact]
+    public void FullScreenIsDisabledByDefault()
+    {
+        var appearance = new AppearanceSettings();
+
+        Assert.False(appearance.FullScreen);
+    }
+
+    [Fact]
+    public void CloningAppearancePreservesFullScreenPreference()
+    {
+        var appearance = new AppearanceSettings { FullScreen = true };
+
+        var clone = appearance.Clone();
+
+        Assert.True(clone.FullScreen);
+    }
+
     [Fact]
     public void ValuesAreClamped()
     {

@@ -39,7 +39,8 @@ public partial class ProfileSelectionWindow : Window
                 ClapPanelThemeMode.Dark => "Tema oscuro",
                 _ => "Tema del sistema"
             };
-            Summary = $"{themeName} · {Math.Clamp(profile.Columns, 1, 10)} columnas";
+            var displayMode = profile.Appearance.FullScreen ? "Pantalla completa" : "Ventana";
+            Summary = $"{themeName} · {Math.Clamp(profile.Columns, 1, 10)} columnas · {displayMode}";
         }
     }
 

@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Probar
+        run: dotnet test ClapPanel.slnx -c Release
+
+      - name: Publicar
+        run: >
+          dotnet publish src/ClapPanel/ClapPanel.csproj -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o publish
+
+      - name: Empaquetar
+        shell: pwsh
+        run: Compress-Archive -Path publish\ClapPanel.exe, LICENSE, README.md -DestinationPath "ClapPanel-${{ github.ref_name }}-win-x64.zip"
+
+      - name: Crear versión en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: ClapPanel-${{ github.ref_name }}-win-x64.zip

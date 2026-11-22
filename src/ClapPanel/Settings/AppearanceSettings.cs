@@ -63,6 +63,9 @@ public sealed class AppearanceSettings
 
     public bool RoundedCorners { get; set; } = true;
 
+    /// <summary>Expands the panel to cover the selected monitor. Disabled by default.</summary>
+    public bool FullScreen { get; set; }
+
     public PanelPosition Position { get; set; } = PanelPosition.BottomRight;
 
     // Kept for compatibility with settings.json files created by older versions.

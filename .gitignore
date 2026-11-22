@@ -1,6 +1,11 @@
 bin/
 obj/
 .vs/
+.vscode/
+.idea/
 *.user
 *.suo
+*.userprefs
 publish/
+TestResults/
+*.zip
