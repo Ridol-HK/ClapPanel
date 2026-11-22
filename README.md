@@ -1,8 +1,8 @@
-ClapPanel
+# ClapPanel
 
 Windows 10/11 application that opens and closes a shortcut panel when a double clap is detected.
 
-Features
+## Features
 
 - Double-clap detection that distinguishes claps from voice and ambient noise.
 - Shortcut panel with folders, categories, favorites, and search.
@@ -10,12 +10,12 @@ Features
 - Assisted microphone calibration.
 - Optional startup with Windows and system tray icon.
 
-Requirements
+## Requirements
 
 - Windows 10 or 11 and a microphone.
 - To build from source: .NET 10 SDK.
 
-Installation
+## Installation
 
 Executable
 
@@ -32,7 +32,7 @@ To build the executable:
 
 dotnet publish src/ClapPanel -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 
-Usage
+## Usage
 
 - Double clap: opens the panel; when the panel is already open, closes it.
 - System tray icon: opens or closes the panel, opens Settings, pauses microphone capture, or exits the application.
@@ -44,11 +44,11 @@ Usage
 - Dragging Windows executables, shortcuts, files, or folders onto the panel: creates shortcuts. Dropping an item onto an internal folder adds the shortcut to that folder.
 - Fullscreen: press "Esc" to clear the search first and then close the menu, or use the "×" button.
 
-Application Organization
+## Application Organization
 
 Under Settings → Icons and folders, you can add and edit applications and internal folders, assign a category, mark items as favorites, and choose a custom image. Folders support subfolders and applications.
 
-In the panel:
+## In the panel:
 
 - The search bar finds names, targets, and categories, including items inside nested folders.
 - The category selector and favorites filter also include items inside folders.
@@ -57,7 +57,7 @@ In the panel:
 
 Shortcuts support a target, arguments, and an optional image. Targets can be executables, Windows shortcuts, files, folders, or addresses supported by the Windows handler. A folder added as a target opens File Explorer; an internal ClapPanel folder displays its own items.
 
-Settings
+## Settings
 
 The Settings window has four tabs: General, Microphone, Appearance, and Icons and folders. Its tabs, buttons, fields, and lists use the same color palette as the panel.
 
@@ -119,7 +119,7 @@ Detection
 - The threshold adapts to ambient noise and never drops below the level defined by the sensitivity setting.
 - Advanced parameters are located in the "Detection" section of "settings.json".
 
-Project Structure
+## Project Structure
 
 ClapPanel/
 ├── src/ClapPanel/
@@ -142,7 +142,7 @@ Tests
 
 dotnet test
 
-License
+## License
 
 This project is distributed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
 
