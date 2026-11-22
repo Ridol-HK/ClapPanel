@@ -120,7 +120,7 @@ Detection
 - Advanced parameters are located in the "Detection" section of "settings.json".
 
 ## Project Structure
-
+'''
 ClapPanel/
 ├── src/ClapPanel/
 │   ├── Audio/         microphone capture
@@ -137,7 +137,7 @@ ClapPanel/
 ├── CHANGELOG.md
 ├── LICENSE
 └── README.md
-
+'''
 Tests
 
 dotnet test
