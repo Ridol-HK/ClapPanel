@@ -44,6 +44,14 @@ public sealed class TrayIconService : IDisposable
 
     public event EventHandler? ExitRequested;
 
+    public void SetPaused(bool paused)
+    {
+        if (_pauseItem.Checked != paused)
+        {
+            _pauseItem.Checked = paused;
+        }
+    }
+
     public void Dispose()
     {
         _icon.Visible = false;

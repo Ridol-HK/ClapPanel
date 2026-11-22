@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Forms = System.Windows.Forms;
 using System.Threading;
 using System.Windows;
 using ClapPanel.Audio;
@@ -14,6 +15,7 @@ using ClapPanel.Launcher;
 using ClapPanel.Settings;
 using ClapPanel.Startup;
 using ClapPanel.Tray;
+using ClapPanel.Theming;
 using ClapPanel.Views;
 
 namespace ClapPanel;
@@ -37,6 +39,7 @@ public partial class App : Application
     private SettingsWindow? _settingsWindow;
     private AppSettings _settings = new();
     private bool _paused;
+    private bool _profileChooserShown;
 
     public App()
     {
@@ -55,6 +58,7 @@ public partial class App : Application
         }
 
         _settings = _settingsService.Load();
+        AppearancePalette.From(_settings.Appearance).Apply(Resources);
         _options = _settings.Detection;
         _detector = new ClapDetector(_options);
 
@@ -104,33 +108,223 @@ public partial class App : Application
     {
         if (_panel is not null)
         {
-            _panel.Close();
+            if (_panel.IsAutoHidden)
+            {
+                _panel.RevealFromCommand();
+            }
+            else
+            {
+                _panel.CloseWithAnimation();
+            }
             return;
         }
 
-        _panel = new PanelWindow(_settings.Items, _settings.Columns, _launcher, _icons, ReorderItems);
+        // The profile chooser is shown only on the first panel activation of
+        // each application run, and only when there are at least two profiles.
+        if (!_profileChooserShown)
+        {
+            _profileChooserShown = true;
+            var profiles = _settings.AppearanceProfiles ?? new List<AppearanceProfile>();
+            if (profiles.Count > 1)
+            {
+                var chooser = new ProfileSelectionWindow(profiles);
+                if (chooser.ShowDialog() == true && chooser.SelectedProfile is { } selectedProfile)
+                {
+                    ApplyAppearanceProfile(selectedProfile);
+                }
+            }
+        }
+
+        OpenPanel();
+    }
+
+    private void ApplyAppearanceProfile(AppearanceProfile profile)
+    {
+        _settings.Appearance = profile.Appearance.Clone();
+        _settings.Columns = Math.Clamp(profile.Columns, 1, 10);
+        AppearancePalette.From(_settings.Appearance).Apply(Resources);
+        _settingsService.Save(_settings);
+    }
+
+    private void OpenPanel()
+    {
+        _panel = new PanelWindow(
+            _settings.Items,
+            _settings.Columns,
+            _settings.Appearance,
+            _launcher,
+            _icons,
+            ReorderItems,
+            () => OpenSettings(selectAppearance: true),
+            GetSavedPanelPosition(),
+            _settings.AllowPanelMovement,
+            PersistPanelPosition,
+            GetSavedPanelSize(verticalDocked: false),
+            GetSavedPanelSize(verticalDocked: true),
+            PersistPanelDockEdge,
+            PersistPanelSize);
         _panel.Closed += (_, _) => _panel = null;
         _panel.Show();
         _panel.Activate();
     }
 
-    private void OpenSettings()
+    private void OpenSettings(bool selectAppearance = false)
     {
         if (_settingsWindow is not null)
         {
+            if (selectAppearance)
+            {
+                _settingsWindow.SelectAppearanceTab();
+            }
+
             _settingsWindow.Activate();
             return;
         }
 
         _settingsWindow = new SettingsWindow(
             _settings,
-            _devices.GetMicrophones(),
+            _devices,
             _detector,
             _imageStore,
             _icons,
-            SaveSettings);
+            SaveSettings,
+            PreviewAppearance,
+            StopMicrophoneCapture,
+            () => Shutdown(),
+            selectAppearance);
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
-        _settingsWindow.Show();
+
+        // Keep auto-hide paused while any settings window is open so the panel
+        // does not disappear while the user is changing its appearance.
+        var panelForSettings = _panel;
+        panelForSettings?.SetAutoHideSuspended(true);
+        _settingsWindow.Closed += (_, _) => panelForSettings?.SetAutoHideSuspended(false);
+
+        if (selectAppearance && panelForSettings is { IsVisible: true })
+        {
+            _settingsWindow.Owner = panelForSettings;
+            _settingsWindow.ShowDialog();
+        }
+        else
+        {
+            _settingsWindow.Show();
+        }
+    }
+
+    private string SelectedMonitorDeviceName()
+    {
+        if (!string.IsNullOrWhiteSpace(_settings.Appearance.MonitorDeviceName))
+        {
+            return _settings.Appearance.MonitorDeviceName;
+        }
+
+        return Forms.Screen.PrimaryScreen?.DeviceName ?? "";
+    }
+
+    private Point? GetSavedPanelPosition()
+    {
+        var monitorName = SelectedMonitorDeviceName();
+        if (_settings.MonitorPositions is not null
+            && _settings.MonitorPositions.TryGetValue(monitorName, out var saved))
+        {
+            return new Point(saved.Left, saved.Top);
+        }
+
+        // Preserve legacy coordinates only on the primary monitor. They were
+        // written before ClapPanel stored a separate location for each display.
+        if (string.Equals(monitorName, Forms.Screen.PrimaryScreen?.DeviceName, StringComparison.OrdinalIgnoreCase)
+            && _settings.PanelLeft is double left && _settings.PanelTop is double top)
+        {
+            return new Point(left, top);
+        }
+
+        return null;
+    }
+
+    private Size? GetSavedPanelSize(bool verticalDocked)
+    {
+        var monitorName = SelectedMonitorDeviceName();
+        if (_settings.MonitorPositions is null
+            || !_settings.MonitorPositions.TryGetValue(monitorName, out var saved))
+        {
+            return null;
+        }
+
+        var width = verticalDocked ? saved.DockedWidth : saved.Width;
+        var height = verticalDocked ? saved.DockedHeight : saved.Height;
+        return width is > 0 && height is > 0 ? new Size(width.Value, height.Value) : null;
+    }
+
+    private PanelPositionData GetOrCreateMonitorLayout()
+    {
+        _settings.MonitorPositions ??= new Dictionary<string, PanelPositionData>(StringComparer.OrdinalIgnoreCase);
+        var monitorName = SelectedMonitorDeviceName();
+        if (!_settings.MonitorPositions.TryGetValue(monitorName, out var layout))
+        {
+            layout = new PanelPositionData();
+            _settings.MonitorPositions[monitorName] = layout;
+        }
+
+        return layout;
+    }
+
+    private void PersistPanelPosition(Point position)
+    {
+        _settings.PanelLeft = position.X;
+        _settings.PanelTop = position.Y;
+        var layout = GetOrCreateMonitorLayout();
+        layout.Left = position.X;
+        layout.Top = position.Y;
+        _settingsWindow?.UpdatePanelPosition(position.X, position.Y);
+        _settingsService.Save(_settings);
+    }
+
+    private void PersistPanelDockEdge(PanelDockEdge edge)
+    {
+        _settings.Appearance.DockEdge = edge;
+        _settingsService.Save(_settings);
+    }
+
+    private void PersistPanelSize(Size size, bool verticalDocked)
+    {
+        var layout = GetOrCreateMonitorLayout();
+        if (verticalDocked)
+        {
+            layout.DockedWidth = size.Width;
+            layout.DockedHeight = size.Height;
+        }
+        else
+        {
+            layout.Width = size.Width;
+            layout.Height = size.Height;
+        }
+
+        _settingsService.Save(_settings);
+    }
+
+    private void PreviewAppearance(AppearanceSettings appearance, int columns, double? panelLeft, double? panelTop)
+    {
+        // Settings dialogs use DynamicResource brushes, so live previews update their controls too.
+        AppearancePalette.From(appearance).Apply(Resources);
+        Point? customPosition = panelLeft is double left && panelTop is double top
+            ? new Point(left, top)
+            : null;
+
+        _panel?.ApplyAppearance(appearance, columns, customPosition);
+    }
+
+    private void StopMicrophoneCapture()
+    {
+        if (_tray is not null)
+        {
+            _tray.SetPaused(true);
+        }
+
+        if (!_paused)
+        {
+            _paused = true;
+            ApplyAudio();
+        }
     }
 
     private void ReorderItems(IReadOnlyList<PanelItem> items)
@@ -139,11 +333,39 @@ public partial class App : Application
         _settingsService.Save(_settings);
     }
 
+    private static IEnumerable<PanelItem> FlattenItems(IEnumerable<PanelItem> items)
+    {
+        foreach (var item in items)
+        {
+            yield return item;
+            if (item.IsFolder && item.Children is not null)
+            {
+                foreach (var child in FlattenItems(item.Children))
+                {
+                    yield return child;
+                }
+            }
+        }
+    }
+
     private void SaveSettings(AppSettings settings)
     {
         _settings = settings;
+        AppearancePalette.From(settings.Appearance).Apply(Resources);
         _settingsService.Save(settings);
-        _imageStore.Cleanup(settings.Items.Select(item => item.ImagePath));
+
+        // The detector keeps the original options object, so copy the saved values into it.
+        _options.CopyFrom(settings.Detection);
+
+        // Reflect saved panel settings immediately without requiring a close/reopen.
+        _panel?.ApplySettings(
+            settings.Items,
+            settings.Columns,
+            settings.Appearance,
+            GetSavedPanelPosition(),
+            settings.AllowPanelMovement);
+
+        _imageStore.Cleanup(FlattenItems(settings.Items).Select(item => item.ImagePath));
         StartupManager.SetEnabled(settings.StartWithWindows);
         ApplyAudio();
     }

@@ -41,6 +41,28 @@ public sealed class DetectionOptions
 
     public double CooldownMs { get; set; } = 1000;
 
+    public DetectionOptions Clone() => (DetectionOptions)MemberwiseClone();
+
+    /// <summary>Copies configurable detection values into this instance.</summary>
+    public void CopyFrom(DetectionOptions source)
+    {
+        CutoffHz = source.CutoffHz;
+        FrameMs = source.FrameMs;
+        AmbientWindowMs = source.AmbientWindowMs;
+        AmbientRatio = source.AmbientRatio;
+        QuietRatio = source.QuietRatio;
+        QuietBeforeFirstMs = source.QuietBeforeFirstMs;
+        QuietBetweenMs = source.QuietBetweenMs;
+        MaxRiseMs = source.MaxRiseMs;
+        MaxDurationMs = source.MaxDurationMs;
+        DecayRatio = source.DecayRatio;
+        StrengthRatio = source.StrengthRatio;
+        MinGapMs = source.MinGapMs;
+        MaxGapMs = source.MaxGapMs;
+        CooldownMs = source.CooldownMs;
+        Threshold = source.Threshold;
+    }
+
     public void ApplySensitivity(int sensitivity)
     {
         var value = Math.Clamp(sensitivity, 0, 100);

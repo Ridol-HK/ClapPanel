@@ -18,7 +18,23 @@ public sealed class AppSettings
 
     public int Columns { get; set; } = 4;
 
+    /// <summary>Whether the panel can be moved by dragging its top bar.</summary>
+    public bool AllowPanelMovement { get; set; } = true;
+
+    /// <summary>Last custom horizontal position in WPF device-independent pixels (legacy fallback).</summary>
+    public double? PanelLeft { get; set; }
+
+    /// <summary>Last custom vertical position in WPF device-independent pixels (legacy fallback).</summary>
+    public double? PanelTop { get; set; }
+
+    /// <summary>Individual custom positions, indexed by the Windows monitor device name.</summary>
+    public Dictionary<string, PanelPositionData> MonitorPositions { get; set; } = new();
+
     public List<PanelItem> Items { get; set; } = new();
 
+    public List<AppearanceProfile> AppearanceProfiles { get; set; } = new();
+
     public DetectionOptions Detection { get; set; } = new();
+
+    public AppearanceSettings Appearance { get; set; } = new();
 }

@@ -51,6 +51,10 @@ public sealed class ClapDetector
 
     public event EventHandler<float>? LevelMeasured;
 
+    public event EventHandler<float>? FrameMeasured;
+
+    public bool Muted { get; set; }
+
     public void Process(ReadOnlySpan<float> samples, int sampleRate)
     {
         Configure(sampleRate);
@@ -94,6 +98,8 @@ public sealed class ClapDetector
 
     private void ProcessFrame(float env)
     {
+        FrameMeasured?.Invoke(this, env);
+
         var threshold = Math.Max(_options.Threshold, (float)(_ambient * _options.AmbientRatio));
         var quietLevel = threshold * _options.QuietRatio;
         var quietBefore = _quietMs;
@@ -180,7 +186,12 @@ public sealed class ClapDetector
             {
                 _first = null;
                 _lastTrigger = _clock;
-                DoubleClapDetected?.Invoke(this, EventArgs.Empty);
+
+                if (!Muted)
+                {
+                    DoubleClapDetected?.Invoke(this, EventArgs.Empty);
+                }
+
                 return;
             }
 

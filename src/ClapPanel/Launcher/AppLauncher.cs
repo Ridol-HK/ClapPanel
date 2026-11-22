@@ -12,7 +12,7 @@ namespace ClapPanel.Launcher;
 
 public sealed class AppLauncher
 {
-    public bool Exists(string target)
+    public bool Exists(string? target)
     {
         if (string.IsNullOrWhiteSpace(target))
         {
@@ -30,19 +30,35 @@ public sealed class AppLauncher
 
     public bool Launch(PanelItem item)
     {
+        if (string.IsNullOrWhiteSpace(item.Target))
+        {
+            return false;
+        }
+
         try
         {
             var path = Environment.ExpandEnvironmentVariables(item.Target.Trim());
-            var info = new ProcessStartInfo(path) { UseShellExecute = true };
-
-            if (!string.IsNullOrWhiteSpace(item.Arguments))
+            ProcessStartInfo info;
+            if (Directory.Exists(path))
             {
-                info.Arguments = item.Arguments;
+                info = new ProcessStartInfo("explorer.exe")
+                {
+                    UseShellExecute = true,
+                    Arguments = $"\"{path}\""
+                };
             }
-
-            if (File.Exists(path))
+            else
             {
-                info.WorkingDirectory = Path.GetDirectoryName(path) ?? "";
+                info = new ProcessStartInfo(path) { UseShellExecute = true };
+                if (!string.IsNullOrWhiteSpace(item.Arguments))
+                {
+                    info.Arguments = item.Arguments;
+                }
+
+                if (File.Exists(path))
+                {
+                    info.WorkingDirectory = Path.GetDirectoryName(path) ?? "";
+                }
             }
 
             Process.Start(info)?.Dispose();

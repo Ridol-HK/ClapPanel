@@ -4,8 +4,16 @@
 // ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
 
 using System;
+using System.Collections.Generic;
 
 namespace ClapPanel.Settings;
+
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+public enum PanelItemKind
+{
+    Application,
+    Folder
+}
 
 public sealed class PanelItem
 {
@@ -19,5 +27,29 @@ public sealed class PanelItem
 
     public string Arguments { get; set; } = "";
 
-    public PanelItem Clone() => (PanelItem)MemberwiseClone();
+    public string Category { get; set; } = "";
+
+    public bool IsFavorite { get; set; }
+
+    public PanelItemKind Kind { get; set; } = PanelItemKind.Application;
+
+    public List<PanelItem> Children { get; set; } = new();
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsFolder => Kind == PanelItemKind.Folder;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string DisplayLabel =>
+        $"{(IsFavorite ? "★ " : "")}{Name}{(string.IsNullOrWhiteSpace(Category) ? "" : $"  [{Category}]")}{(IsFolder ? "  📁" : "")}";
+
+    public PanelItem Clone() => CloneDeep();
+
+    public PanelItem CloneDeep()
+    {
+        var clone = (PanelItem)MemberwiseClone();
+        clone.Children = Children is null
+            ? new List<PanelItem>()
+            : Children.ConvertAll(child => child.CloneDeep());
+        return clone;
+    }
 }

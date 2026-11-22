@@ -4,81 +4,216 @@ This file is part of ClapPanel.
 ClapPanel is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
 -->
-<Window x:Class="ClapPanel.Views.SettingsWindow"
+<Window Style="{StaticResource {x:Type Window}}"
+        x:Class="ClapPanel.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ClapPanel.Views"
         Title="Ajustes"
-        Width="440"
-        SizeToContent="Height"
-        MaxHeight="760"
-        ResizeMode="NoResize"
+        Width="560"
+        Height="760"
+        MinWidth="500"
+        MinHeight="540"
         WindowStartupLocation="CenterScreen">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="20">
-            <TextBlock Text="Micrófono" />
-            <ComboBox x:Name="DeviceCombo"
-                      DisplayMemberPath="Name"
-                      SelectedValuePath="Id"
-                      Margin="0,6,0,16" />
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource WindowNavigationBrush}"
+                BorderBrush="{DynamicResource WindowBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="9"
+                Margin="12,10,12,12"
+                Padding="12,8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancelar" IsCancel="True" Padding="20,6" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="Guardar" Style="{StaticResource AccentButtonStyle}" Padding="20,6" Click="Save_Click" />
+            </StackPanel>
+        </Border>
 
-            <TextBlock Text="Sensibilidad" />
-            <Slider x:Name="SensitivitySlider"
-                    Minimum="0"
-                    Maximum="100"
-                    Margin="0,6,0,16" />
+        <TabControl x:Name="SettingsTabs" Margin="12,12,12,0">
+            <TabItem Header="General">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Comportamiento del panel" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <CheckBox x:Name="StartupCheck" Content="Iniciar con Windows" Margin="0,0,0,10" />
+                        <CheckBox x:Name="AllowPanelMovementCheck" IsChecked="True" Margin="0,0,0,16">
+                            <TextBlock Text="Permitir mover libremente el panel arrastrando su barra superior" TextWrapping="Wrap" />
+                        </CheckBox>
 
-            <TextBlock Text="Nivel de entrada (la marca roja es el umbral de detección)"
-                       TextWrapping="Wrap" />
-            <Grid Margin="0,6,0,16">
-                <ProgressBar x:Name="LevelBar"
-                             Minimum="0"
-                             Maximum="1"
-                             Height="12" />
-                <Rectangle Width="2"
-                           Height="12"
-                           Fill="Red"
-                           HorizontalAlignment="Center" />
-            </Grid>
+                        <Separator Margin="0,0,0,14" />
+                        <TextBlock Text="Acciones" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <Button Content="Detener captura del micrófono" HorizontalAlignment="Left" Padding="12,6" Click="StopMicrophone_Click" />
+                        <TextBlock x:Name="MicrophoneStatusText"
+                                   Text="La captura del micrófono está controlada desde el icono de ClapPanel en la bandeja del sistema."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,14" />
+                        <Button Content="Restablecer todos los valores predeterminados" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,10" Click="ResetDefaults_Click" />
+                        <Button Content="Cerrar ClapPanel" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Click="ExitApplication_Click" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-            <CheckBox x:Name="StartupCheck"
-                      Content="Iniciar con Windows"
-                      Margin="0,0,0,16" />
+            <TabItem Header="Micrófono">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Micrófono" />
+                        <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id" Margin="0,6,0,16" />
 
-            <TextBlock Text="Columnas del panel" />
-            <DockPanel Margin="0,6,0,16">
-                <TextBlock DockPanel.Dock="Right"
-                           Width="24"
-                           TextAlignment="Right"
-                           Text="{Binding Value, ElementName=ColumnsSlider}" />
-                <Slider x:Name="ColumnsSlider"
-                        Minimum="1"
-                        Maximum="10"
-                        TickFrequency="1"
-                        IsSnapToTickEnabled="True" />
-            </DockPanel>
+                        <TextBlock Text="Sensibilidad" />
+                        <Slider x:Name="SensitivitySlider" Minimum="0" Maximum="100" Margin="0,6,0,16" />
 
-            <TextBlock Text="Iconos del panel" />
-            <Grid Height="170" Margin="0,6,0,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <ListBox x:Name="ItemsList"
-                         DisplayMemberPath="Name"
-                         MouseDoubleClick="Edit_Click" />
-                <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                    <Button Content="Añadir" Width="80" Margin="0,0,0,4" Click="Add_Click" />
-                    <Button Content="Editar" Width="80" Margin="0,0,0,4" Click="Edit_Click" />
-                    <Button Content="Eliminar" Width="80" Margin="0,0,0,4" Click="Remove_Click" />
-                    <Button Content="Subir" Width="80" Margin="0,0,0,4" Click="MoveUp_Click" />
-                    <Button Content="Bajar" Width="80" Click="MoveDown_Click" />
-                </StackPanel>
-            </Grid>
+                        <TextBlock Text="Nivel de entrada (la marca roja es el umbral de detección)" TextWrapping="Wrap" />
+                        <Grid Margin="0,6,0,16">
+                            <ProgressBar x:Name="LevelBar" Minimum="0" Maximum="1" Height="12" />
+                            <Rectangle Width="2" Height="12" Fill="Red" HorizontalAlignment="Center" />
+                        </Grid>
 
-            <Button Content="Guardar"
-                    Padding="20,6"
-                    HorizontalAlignment="Right"
-                    Click="Save_Click" />
-        </StackPanel>
-    </ScrollViewer>
+                        <Button x:Name="CalibrateButton" Content="Calibrar…" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" Padding="16,6" Click="Calibrate_Click" />
+                        <TextBlock x:Name="CalibrationText" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem x:Name="AppearanceTab" Header="Apariencia">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <local:PanelPreview x:Name="Preview" Margin="0,0,0,16" />
+                        <TextBlock Text="Los cambios se reflejan en el panel mientras editas. Guardar los conserva; Cancelar los revierte."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,14" />
+
+                        <TextBlock Text="Perfiles visuales" FontWeight="SemiBold" />
+                        <Grid Margin="0,6,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <ComboBox x:Name="ProfileCombo" DisplayMemberPath="Name" Margin="0,0,0,6" />
+                                <TextBox x:Name="ProfileNameBox" ToolTip="Nombre del nuevo perfil" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                <Button Content="Aplicar" Style="{StaticResource AccentButtonStyle}" Width="86" Margin="0,0,0,4" Click="ApplyProfile_Click" />
+                                <Button Content="Guardar perfil" Style="{StaticResource AccentButtonStyle}" Width="86" Margin="0,0,0,4" Click="SaveProfile_Click" />
+                                <Button Content="Eliminar" Style="{StaticResource DangerButtonStyle}" Width="86" Click="DeleteProfile_Click" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Tema" />
+                        <ComboBox x:Name="ThemeCombo" SelectedValuePath="Tag" Margin="0,6,0,16" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="Sistema" Tag="System" />
+                            <ComboBoxItem Content="Claro" Tag="Light" />
+                            <ComboBoxItem Content="Oscuro" Tag="Dark" />
+                        </ComboBox>
+
+                        <TextBlock Text="Color de fondo (hexadecimal; vacío = según el tema)" TextWrapping="Wrap" />
+                        <DockPanel Margin="0,6,0,6">
+                            <Button DockPanel.Dock="Right" Content="Auto" Padding="10,2" Margin="8,0,0,0" Click="ClearBackground_Click" />
+                            <TextBox x:Name="BackgroundBox" TextChanged="Appearance_Changed" />
+                        </DockPanel>
+                        <WrapPanel x:Name="BackgroundSwatches" Margin="0,0,0,10" />
+
+                        <TextBlock Text="Color de acento (hexadecimal; vacío = azul por defecto)" TextWrapping="Wrap" />
+                        <DockPanel Margin="0,6,0,6">
+                            <Button DockPanel.Dock="Right" Content="Auto" Padding="10,2" Margin="8,0,0,0" Click="ClearAccent_Click" />
+                            <TextBox x:Name="AccentBox" TextChanged="Appearance_Changed" />
+                        </DockPanel>
+                        <WrapPanel x:Name="AccentSwatches" Margin="0,0,0,10" />
+
+                        <TextBlock Text="Opacidad del panel" />
+                        <DockPanel Margin="0,6,0,16">
+                            <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=OpacitySlider, StringFormat='{}{0:0} %'}" />
+                            <Slider x:Name="OpacitySlider" Minimum="40" Maximum="100" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+
+                        <CheckBox x:Name="DynamicTransparencyCheck" Content="Reducir opacidad cuando el ratón no está sobre el panel" Margin="0,0,0,6"
+                                  Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="Opacidad inactiva" />
+                        <DockPanel Margin="0,6,0,16">
+                            <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=InactiveOpacitySlider, StringFormat='{}{0:0} %'}" />
+                            <Slider x:Name="InactiveOpacitySlider" Minimum="20" Maximum="100" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+
+                        <TextBlock Text="Tamaño de los iconos" />
+                        <DockPanel Margin="0,6,0,16">
+                            <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=IconSizeSlider, StringFormat='{}{0:0} px'}" />
+                            <Slider x:Name="IconSizeSlider" Minimum="24" Maximum="96" TickFrequency="4" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+
+                        <CheckBox x:Name="ShowNamesCheck" Content="Mostrar nombres bajo los iconos" Margin="0,0,0,8" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <CheckBox x:Name="RoundedCheck" Content="Esquinas redondeadas" Margin="0,0,0,8" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+
+                        <TextBlock Text="Animación de aparición y cierre" />
+                        <ComboBox x:Name="AnimationStyleCombo" SelectedValuePath="Tag" Margin="0,6,0,16" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="Ninguna" Tag="None" />
+                            <ComboBoxItem Content="Desvanecer" Tag="Fade" />
+                            <ComboBoxItem Content="Escala" Tag="Scale" />
+                            <ComboBoxItem Content="Deslizar desde el borde" Tag="Slide" />
+                            <ComboBoxItem Content="Aparecer desde arriba" Tag="Drop" />
+                            <ComboBoxItem Content="Zoom con rebote suave" Tag="Pop" />
+                            <ComboBoxItem Content="Rebote ligero" Tag="Bounce" />
+                        </ComboBox>
+
+                        <Separator Margin="0,0,0,14" />
+                        <TextBlock Text="Posición y monitores" FontWeight="SemiBold" />
+                        <TextBlock Text="Monitor" Margin="0,8,0,0" />
+                        <ComboBox x:Name="MonitorCombo" DisplayMemberPath="DisplayName" SelectedValuePath="DeviceName" Margin="0,6,0,12" SelectionChanged="Appearance_Changed" />
+
+                        <TextBlock Text="Posición inicial" />
+                        <ComboBox x:Name="PositionCombo" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="Esquina inferior derecha" Tag="BottomRight" />
+                            <ComboBoxItem Content="Esquina inferior izquierda" Tag="BottomLeft" />
+                            <ComboBoxItem Content="Esquina superior derecha" Tag="TopRight" />
+                            <ComboBoxItem Content="Esquina superior izquierda" Tag="TopLeft" />
+                            <ComboBoxItem Content="Centro" Tag="Center" />
+                        </ComboBox>
+
+                        <TextBlock Text="Acoplar al borde" />
+                        <ComboBox x:Name="DockEdgeCombo" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="Sin acoplar" Tag="None" />
+                            <ComboBoxItem Content="Borde izquierdo" Tag="Left" />
+                            <ComboBoxItem Content="Borde derecho" Tag="Right" />
+                            <ComboBoxItem Content="Borde superior" Tag="Top" />
+                            <ComboBoxItem Content="Borde inferior" Tag="Bottom" />
+                        </ComboBox>
+
+                        <CheckBox x:Name="AutoHideCheck" Content="Ocultar automáticamente cuando no se utiliza" Margin="0,4,0,8"
+                                  Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="Tiempo de inactividad antes de ocultar" />
+                        <DockPanel Margin="0,6,0,16">
+                            <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=AutoHideDelaySlider, StringFormat='{}{0:0} s'}" />
+                            <Slider x:Name="AutoHideDelaySlider" Minimum="1" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Iconos y carpetas">
+                <DockPanel Margin="16">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                        <TextBlock Text="Columnas del panel" />
+                        <DockPanel Margin="0,6,0,14">
+                            <TextBlock DockPanel.Dock="Right" Width="24" TextAlignment="Right" Text="{Binding Value, ElementName=ColumnsSlider}" />
+                            <Slider x:Name="ColumnsSlider" Minimum="1" Maximum="10" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+                        <TextBlock Text="Aplicaciones, categorías y carpetas" FontWeight="SemiBold" />
+                        <TextBlock Text="Asigna una categoría y marca favoritos al editar cada acceso directo. Las carpetas se abren desde el panel." TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ListBox x:Name="ItemsList" Grid.Column="0" DisplayMemberPath="DisplayLabel" MouseDoubleClick="Edit_Click" />
+                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                            <Button Content="Añadir aplicación" Style="{StaticResource AccentButtonStyle}" Width="112" Margin="0,0,0,4" Click="Add_Click" />
+                            <Button Content="Añadir carpeta" Style="{StaticResource AccentButtonStyle}" Width="112" Margin="0,0,0,4" Click="AddFolder_Click" />
+                            <Button Content="Editar" Width="112" Margin="0,0,0,4" Click="Edit_Click" />
+                            <Button Content="Editar contenido" Width="112" Margin="0,0,0,4" Click="EditFolder_Click" />
+                            <Button Content="Eliminar" Style="{StaticResource DangerButtonStyle}" Width="112" Margin="0,0,0,4" Click="Remove_Click" />
+                            <Button Content="Subir" Width="112" Margin="0,0,0,4" Click="MoveUp_Click" />
+                            <Button Content="Bajar" Width="112" Click="MoveDown_Click" />
+                        </StackPanel>
+                    </Grid>
+                </DockPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
 </Window>

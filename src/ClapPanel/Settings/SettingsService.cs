@@ -4,8 +4,10 @@
 // ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using ClapPanel.Detection;
 
 namespace ClapPanel.Settings;
 
@@ -27,7 +29,9 @@ public sealed class SettingsService
                 return new AppSettings();
             }
 
-            return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path)) ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path)) ?? new AppSettings();
+            Normalize(settings);
+            return settings;
         }
         catch
         {
@@ -37,7 +41,39 @@ public sealed class SettingsService
 
     public void Save(AppSettings settings)
     {
+        Normalize(settings);
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         File.WriteAllText(_path, JsonSerializer.Serialize(settings, JsonOptions));
+    }
+
+    private static void Normalize(AppSettings settings)
+    {
+        settings.Items ??= new List<PanelItem>();
+        settings.AppearanceProfiles ??= new List<AppearanceProfile>();
+        settings.MonitorPositions ??= new Dictionary<string, PanelPositionData>(StringComparer.OrdinalIgnoreCase);
+        settings.Appearance ??= new AppearanceSettings();
+        settings.Detection ??= new DetectionOptions();
+        foreach (var item in settings.Items)
+        {
+            NormalizeItem(item);
+        }
+
+        foreach (var profile in settings.AppearanceProfiles)
+        {
+            profile.Appearance ??= new AppearanceSettings();
+        }
+    }
+
+    private static void NormalizeItem(PanelItem item)
+    {
+        item.Name ??= "";
+        item.Target ??= "";
+        item.Arguments ??= "";
+        item.Category ??= "";
+        item.Children ??= new List<PanelItem>();
+        foreach (var child in item.Children)
+        {
+            NormalizeItem(child);
+        }
     }
 }

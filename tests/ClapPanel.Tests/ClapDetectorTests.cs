@@ -161,4 +161,14 @@ public class ClapDetectorTests
 
         Assert.Equal(2, _count);
     }
+
+    [Fact]
+    public void MutedDetectorDoesNotRaiseEvent()
+    {
+        _detector.Muted = true;
+
+        Feed(Silence(500), Clap(), Silence(190), Clap(), Silence(300));
+
+        Assert.Equal(0, _count);
+    }
 }
