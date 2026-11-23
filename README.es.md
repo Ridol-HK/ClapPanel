@@ -4,7 +4,14 @@
 
 ClapPanel es una aplicación para Windows 10/11 que abre y cierra un panel de accesos directos al detectar un doble aplauso.
 
-**Última versión: 1.5.0**
+**Última versión: 1.6.0**
+
+## Novedades de la versión 1.6.0
+
+- Detecta accesos a aplicaciones, archivos y carpetas cuyo destino ya no está disponible y los marca visualmente.
+- Menú contextual con clic derecho para editar, duplicar, eliminar o abrir la ubicación del acceso.
+- Opción para cerrar el panel automáticamente después de iniciar correctamente una aplicación o archivo.
+- Apartado **Ajustes → Estado del sistema** para consultar el detector de aplausos, micrófono, atajo global, configuración, imágenes, copias de seguridad, inicio con Windows y versión instalada.
 
 ## Características
 
@@ -23,6 +30,9 @@ ClapPanel es una aplicación para Windows 10/11 que abre y cierra un panel de ac
 - Asistente de primera ejecución para elegir el micrófono, comprobar la entrada, ajustar la sensibilidad y configurar el atajo global.
 - El menú de acople inteligente permite elegir entre 1 y 12 accesos visibles, priorizar favoritos y ajustar el ancho de la zona de activación del borde.
 - Inicio opcional con Windows e icono en la bandeja del sistema.
+- Exportación e importación de toda la configuración mediante archivos ZIP, incluidos accesos directos, categorías, carpetas anidadas, perfiles visuales e imágenes personalizadas.
+- Importación exclusiva de accesos directos que conserva la apariencia y las demás preferencias.
+- Copias de seguridad locales automáticas antes de sobrescribir, importar o restablecer ajustes, y recuperación desde la última copia válida si el archivo de configuración se daña.
 
 ## Requisitos
 
@@ -66,6 +76,10 @@ dotnet publish src/ClapPanel -c Release -r win-x64 --self-contained -p:PublishSi
 - **Arrastrar ejecutables, accesos directos, archivos o carpetas de Windows al panel:** crea accesos directos. Al soltar un elemento sobre una carpeta interna, se agrega a esa carpeta.
 - **Esc:** primero limpia la búsqueda; si ya está vacía, cierra el panel. El botón × hace lo mismo.
 - **Controles de teclado:** consulta [Teclado y accesibilidad](#teclado-y-accesibilidad).
+
+## Copias de seguridad y transferencia de configuración
+
+Desde **Ajustes → General**, usa **Exportar configuración** para crear un ZIP o **Importar configuración** para restaurarlo. Los archivos incluyen el árbol de accesos (con categorías y carpetas anidadas), perfiles visuales, preferencias e imágenes personalizadas. **Importar solo accesos** reemplaza el árbol de accesos y conserva la apariencia y todas las demás preferencias. ClapPanel mantiene hasta 20 copias locales rotativas en `%APPDATA%\ClapPanel\backups`; se crea una copia antes de guardar cambios importantes de configuración, importar o restablecer ajustes. Las actualizaciones frecuentes de estado, como mover o redimensionar la ventana y el autoguardado de notas, no generan un ZIP en cada cambio. Si `settings.json` deja de ser válido o falta una imagen personalizada administrada, la aplicación intenta recuperar automáticamente la copia válida más reciente. También puedes usar **Restaurar última copia** para hacerlo manualmente.
 
 ## Teclado y accesibilidad
 

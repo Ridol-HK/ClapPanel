@@ -22,6 +22,9 @@ public sealed class AppSettings
 
     public bool StartWithWindows { get; set; }
 
+    /// <summary>Close the panel after successfully launching an application or file.</summary>
+    public bool ClosePanelAfterLaunch { get; set; }
+
     public int Columns { get; set; } = 4;
 
     /// <summary>Whether the panel can be moved by dragging its top bar.</summary>

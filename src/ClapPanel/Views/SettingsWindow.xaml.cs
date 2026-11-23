@@ -7,10 +7,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using ClapPanel.Audio;
 using ClapPanel.Detection;
 using ClapPanel.Launcher;
@@ -40,6 +42,7 @@ public partial class SettingsWindow : Window
     private readonly ClapDetector _detector;
     private readonly ImageStore _store;
     private readonly IconProvider _icons;
+    private readonly ConfigurationArchiveService _archives;
     private readonly Action<AppSettings> _onSave;
     private readonly Action<AppearanceSettings, int, double?, double?>? _onAppearancePreview;
     private readonly Action _stopMicrophoneRequested;
@@ -81,6 +84,7 @@ public partial class SettingsWindow : Window
         ClapDetector detector,
         ImageStore store,
         IconProvider icons,
+        ConfigurationArchiveService archives,
         Action<AppSettings> onSave,
         Action<AppearanceSettings, int, double?, double?>? onAppearancePreview,
         Action stopMicrophoneRequested,
@@ -98,6 +102,7 @@ public partial class SettingsWindow : Window
         _widgets = settings.Widgets;
         _store = store;
         _icons = icons;
+        _archives = archives;
         _onSave = onSave;
         _onAppearancePreview = onAppearancePreview;
         _stopMicrophoneRequested = stopMicrophoneRequested;
@@ -130,6 +135,8 @@ public partial class SettingsWindow : Window
         StartupCheck.IsChecked = settings.StartWithWindows;
         AllowPanelMovementCheck.IsChecked = settings.AllowPanelMovement;
         RememberCategoryCheck.IsChecked = settings.RememberCategorySelection;
+        CloseAfterLaunchCheck.IsChecked = settings.ClosePanelAfterLaunch;
+        RefreshSystemStatus();
         var globalShortcut = settings.GlobalShortcut ?? new GlobalShortcutSettings();
         HotkeyEnabledCheck.IsChecked = globalShortcut.Enabled;
         HotkeyCtrlCheck.IsChecked = (globalShortcut.Modifiers & GlobalShortcutSettings.Control) != 0;
@@ -233,6 +240,12 @@ public partial class SettingsWindow : Window
     public void SelectAppearanceTab()
     {
         SettingsTabs.SelectedItem = AppearanceTab;
+    }
+
+    public void SelectIconsTab()
+    {
+        SettingsTabs.SelectedItem = IconsTab;
+        ItemsList.Focus();
     }
 
     /// <summary>Tracks panel movement while this settings window is open.</summary>
@@ -452,6 +465,142 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void ExportConfig_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = Loc.Get("Settings.ExportDialogTitle"),
+            Filter = "ClapPanel backup (*.zip)|*.zip",
+            DefaultExt = ".zip",
+            AddExtension = true,
+            FileName = $"ClapPanel-backup-{DateTime.Now:yyyyMMdd-HHmmss}.zip"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _archives.Export(dialog.FileName);
+            BackupStatusText.Text = Loc.Get("Settings.ExportSuccess");
+        }
+        catch (Exception exception)
+        {
+            ShowBackupError(exception);
+        }
+    }
+
+    private void ImportConfig_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = Loc.Get("Settings.ImportDialogTitle"),
+            Filter = "ClapPanel backup (*.zip)|*.zip|ZIP (*.zip)|*.zip",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        if (MessageBox.Show(this, Loc.Get("Settings.ImportConfirm"), "ClapPanel",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            var imported = _archives.Import(dialog.FileName, _settingsSource, shortcutsOnly: false);
+            _onSave(imported);
+            _saved = true;
+            BackupStatusText.Text = Loc.Get("Settings.ImportSuccess");
+            Close();
+        }
+        catch (Exception exception)
+        {
+            ShowBackupError(exception);
+        }
+    }
+
+    private void ImportShortcuts_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = Loc.Get("Settings.ImportDialogTitle"),
+            Filter = "ClapPanel backup (*.zip)|*.zip|ZIP (*.zip)|*.zip",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        if (MessageBox.Show(this, Loc.Get("Settings.ImportShortcutsConfirm"), "ClapPanel",
+                MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        if (!TryBuildSettingsFromControls(out var currentSettings))
+        {
+            return;
+        }
+
+        try
+        {
+            var imported = _archives.Import(dialog.FileName, currentSettings, shortcutsOnly: true);
+            _onSave(imported);
+            _saved = true;
+            BackupStatusText.Text = Loc.Get("Settings.ImportShortcutsSuccess");
+            Close();
+        }
+        catch (Exception exception)
+        {
+            ShowBackupError(exception);
+        }
+    }
+
+    private void RestoreBackup_Click(object sender, RoutedEventArgs e)
+    {
+        if (MessageBox.Show(this, Loc.Get("Settings.RestoreConfirm"), "ClapPanel",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!_archives.TryRestoreLatestBackup(out var restored) || restored is null)
+            {
+                BackupStatusText.Text = Loc.Get("Settings.NoBackup");
+                return;
+            }
+
+            _onSave(restored);
+            _saved = true;
+            BackupStatusText.Text = Loc.Get("Settings.RestoreSuccess");
+            Close();
+        }
+        catch (Exception exception)
+        {
+            ShowBackupError(exception);
+        }
+    }
+
+    private void ShowBackupError(Exception exception)
+    {
+        var message = Loc.Format("Settings.BackupError", exception.Message);
+        BackupStatusText.Text = message;
+        MessageBox.Show(this, message, "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
     private void ResetDefaults_Click(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(
@@ -466,6 +615,16 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        try
+        {
+            _archives.CreateBackup();
+        }
+        catch (Exception exception)
+        {
+            ShowBackupError(exception);
+            return;
+        }
+
         var defaults = new AppSettings();
         _categorySelectionReset = true;
         _loading = true;
@@ -476,6 +635,7 @@ public partial class SettingsWindow : Window
         StartupCheck.IsChecked = defaults.StartWithWindows;
         AllowPanelMovementCheck.IsChecked = defaults.AllowPanelMovement;
         RememberCategoryCheck.IsChecked = defaults.RememberCategorySelection;
+        CloseAfterLaunchCheck.IsChecked = defaults.ClosePanelAfterLaunch;
         HotkeyEnabledCheck.IsChecked = defaults.GlobalShortcut.Enabled;
         HotkeyCtrlCheck.IsChecked = (defaults.GlobalShortcut.Modifiers & GlobalShortcutSettings.Control) != 0;
         HotkeyAltCheck.IsChecked = (defaults.GlobalShortcut.Modifiers & GlobalShortcutSettings.Alt) != 0;
@@ -809,8 +969,9 @@ public partial class SettingsWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
 
-    private void Save_Click(object sender, RoutedEventArgs e)
+    private bool TryBuildSettingsFromControls(out AppSettings settings)
     {
+        settings = new AppSettings();
         if (!IsValidColor(BackgroundBox.Text) || !IsValidColor(AccentBox.Text))
         {
             MessageBox.Show(
@@ -819,17 +980,17 @@ public partial class SettingsWindow : Window
                 "ClapPanel",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
-            return;
+            return false;
         }
 
         var globalShortcut = ReadGlobalShortcut();
         if (globalShortcut.Enabled && globalShortcut.Modifiers == 0)
         {
             MessageBox.Show(this, Loc.Get("Settings.GlobalShortcutNeedsModifier"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
-            return;
+            return false;
         }
 
-        _onSave(new AppSettings
+        settings = new AppSettings
         {
             FirstRunCompleted = _settingsSource.FirstRunCompleted,
             GlobalShortcut = globalShortcut,
@@ -839,6 +1000,7 @@ public partial class SettingsWindow : Window
             Columns = (int)ColumnsSlider.Value,
             AllowPanelMovement = AllowPanelMovementCheck.IsChecked == true,
             RememberCategorySelection = RememberCategoryCheck.IsChecked == true,
+            ClosePanelAfterLaunch = CloseAfterLaunchCheck.IsChecked == true,
             LastSelectedCategory = RememberCategoryCheck.IsChecked == true && !_categorySelectionReset ? _settingsSource.LastSelectedCategory : "",
             PanelLeft = _panelLeft,
             PanelTop = _panelTop,
@@ -849,9 +1011,62 @@ public partial class SettingsWindow : Window
             Appearance = ReadAppearance(),
             Language = ParseEnum(SelectedTag(LanguageCombo), AppLanguage.System),
             Widgets = ReadWidgets()
-        });
+        };
+        return true;
+    }
 
+    private void Save_Click(object sender, RoutedEventArgs e)
+    {
+        if (!TryBuildSettingsFromControls(out var settings))
+        {
+            return;
+        }
+
+        _onSave(settings);
         _saved = true;
         Close();
     }
+    private void RefreshSystemStatus_Click(object sender, RoutedEventArgs e) => RefreshSystemStatus();
+
+    private void RefreshSystemStatus()
+    {
+        var mic = false;
+        try { mic = _provider.GetMicrophones().Any(device => string.Equals(device.Id, _settingsSource.MicrophoneId, StringComparison.OrdinalIgnoreCase)); }
+        catch { }
+        var captureRunning = _microphone.IsRunning;
+        var shortcut = _settingsSource.GlobalShortcut?.Enabled == true;
+        var items = _settingsSource.Items ?? new List<PanelItem>();
+        var allItems = FlattenItems(items).ToList();
+        var broken = allItems.Count(item => !string.IsNullOrWhiteSpace(item.ImagePath) && !File.Exists(Environment.ExpandEnvironmentVariables(item.ImagePath)));
+        var launcher = new AppLauncher();
+        var targetsBroken = allItems.Count(item =>
+            (!item.IsFolder || !string.IsNullOrWhiteSpace(item.Target)) && !launcher.Exists(item.Target));
+        var config = _settingsSource.Items is not null && allItems.All(item => item is not null);
+        var backups = false;
+        try { backups = Directory.Exists(_archives.BackupsDirectory) && Directory.EnumerateFiles(_archives.BackupsDirectory, "*.zip").Any(); } catch { }
+        var rows = new[]
+        {
+            $"{Loc.Get("Status.ClapDetector")}: {(captureRunning ? Loc.Get("Status.Running") : Loc.Get("Status.Stopped"))}",
+            $"{Loc.Get("Status.Microphone")}: {(mic ? Loc.Get("Status.Connected") : Loc.Get("Status.Disconnected"))}",
+            $"{Loc.Get("Status.GlobalShortcut")}: {(shortcut ? Loc.Get("Status.Configured") : Loc.Get("Status.Disabled"))}",
+            $"{Loc.Get("Status.Configuration")}: {(config ? Loc.Get("Status.Correct") : Loc.Get("Status.Warning"))}",
+            $"{Loc.Get("Status.CustomImages")}: {(broken == 0 ? Loc.Get("Status.Correct") : Loc.Format("Status.MissingCount", broken))}",
+            $"{Loc.Get("Status.Backups")}: {(backups ? Loc.Get("Status.Available") : Loc.Get("Status.NotFound"))}",
+            $"{Loc.Get("Status.Startup")}: {(_settingsSource.StartWithWindows ? Loc.Get("Status.Configured") : Loc.Get("Status.Disabled"))}",
+            $"{Loc.Get("Status.Version")}: {AppInfo.Version}",
+            $"{Loc.Get("Status.BrokenTargets")}: {targetsBroken}"
+        };
+        SystemStatusText.Text = string.Join(Environment.NewLine, rows);
+    }
+
+    private static IEnumerable<PanelItem> FlattenItems(IEnumerable<PanelItem> source)
+    {
+        foreach (var item in source)
+        {
+            yield return item;
+            if (item.Children is not null)
+                foreach (var child in FlattenItems(item.Children)) yield return child;
+        }
+    }
+
 }

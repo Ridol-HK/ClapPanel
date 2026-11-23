@@ -1,20 +1,24 @@
 [English](RELEASE_NOTES.en.md) | [Español](RELEASE_NOTES.md)
 
-## ClapPanel 1.5.0
+## ClapPanel 1.6.0
 
 ClapPanel is a Windows 10/11 application that opens and closes a shortcut panel when it detects a double clap.
 
 ### What's new
 
-- Live microphone monitor and diagnostics, including input levels, device information, and capture errors.
-- Configurable global keyboard shortcut (Ctrl + Alt + Space by default).
-- First-run setup assistant to test the microphone and choose sensitivity, shortcut, and Windows startup behavior; existing installations skip it automatically.
-- Customizable smart dock: 1–12 visible shortcuts, favorite-first ordering, and adjustable screen-edge reveal zone.
-- Arrow-key navigation resets the inactivity counter and keeps the panel opaque while the keyboard is in use.
+- Broken shortcut detection for applications, files, and folders with configured targets.
+- Right-click context menu to edit, duplicate, delete, or open an item's location.
+- Optional automatic panel closing after successfully launching an application or file.
+- New System Status section in Settings with the state of core components and the installed version.
+- Export and import the complete configuration through ZIP archives, including shortcuts, categories, nested folders, appearance profiles, and custom images.
+- Import shortcuts only to preserve the current appearance and all other preferences.
+- Automatic backups before overwriting settings, importing a configuration, or restoring defaults.
+- Automatic recovery from the latest valid backup when the settings file is damaged, plus manual restore from Settings → General.
+- Keep up to 20 rolling local backups in `%APPDATA%\ClapPanel\backups`.
 
 ### Installation
 
-1. Download `ClapPanel-v1.5.0-win-x64.zip` from this release's assets.
+1. Download `ClapPanel-v1.6.0-win-x64.zip` from this release's assets.
 2. Extract the archive and run `ClapPanel.exe`.
 
 You do not need to install .NET. Since the executable is not signed, Windows SmartScreen may show a warning: select **More info** and then **Run anyway**.

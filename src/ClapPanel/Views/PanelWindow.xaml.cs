@@ -60,6 +60,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
     private bool _isVerticalDocked;
     private bool _initialSizingCompleted;
     private bool _allowPanelMovement;
+    private bool _closeAfterLaunch;
     private Point _dragStart;
     private int _configuredColumns;
     private string _searchTerm = "";
@@ -98,7 +99,8 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         ClipboardHistory clipboard,
         Action<string> onNotesChanged,
         string? savedCategoryFilter,
-        Action<string> onCategoryFilterChanged)
+        Action<string> onCategoryFilterChanged,
+        bool closeAfterLaunch = false)
     {
         _clipboard = clipboard;
         _onNotesChanged = onNotesChanged;
@@ -111,6 +113,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         _settingsRequested = settingsRequested;
         _customPosition = savedPosition;
         _allowPanelMovement = allowPanelMovement;
+        _closeAfterLaunch = closeAfterLaunch;
         _rootItems = items as List<PanelItem> ?? items.ToList();
         _currentItems = _rootItems;
         _onPositionChanged = onPositionChanged;
@@ -322,13 +325,15 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         AppearanceSettings appearance,
         Point? customPosition,
         bool allowPanelMovement,
-        string? savedCategoryFilter)
+        string? savedCategoryFilter,
+        bool closeAfterLaunch)
     {
         _rootItems = items as List<PanelItem> ?? items.ToList();
         _currentItems = _rootItems;
         _folderStack.Clear();
         _configuredColumns = columns;
         _allowPanelMovement = allowPanelMovement;
+        _closeAfterLaunch = closeAfterLaunch;
         _customPosition = customPosition;
         _categoryFilter = string.IsNullOrWhiteSpace(savedCategoryFilter) ? AllLabel : savedCategoryFilter;
         UpdateMoveHandle();
@@ -1452,7 +1457,9 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
                 break;
             }
 
-            var missing = !item.IsFolder && !_launcher.Exists(item.Target);
+            var missing = item.IsFolder
+                ? (!string.IsNullOrWhiteSpace(item.Target) && !_launcher.Exists(item.Target))
+                : !_launcher.Exists(item.Target);
             var shortcut = PanelKeyboard.ShortcutLabel(_tiles.Count);
             _tiles.Add(new PanelTile(item, _icons.Load(item), missing, candidate.Parents)
             {
@@ -1572,7 +1579,70 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         if (!_launcher.Launch(tile.Item))
         {
             MessageBox.Show(this, Loc.Format("Panel.OpenError", tile.Item.Name), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
         }
+
+        if (_closeAfterLaunch)
+        {
+            CloseWithAnimation();
+        }
+    }
+
+    private PanelTile? ContextTile(object sender) =>
+        (sender as FrameworkElement)?.DataContext as PanelTile;
+
+    private void ContextEdit_Click(object sender, RoutedEventArgs e)
+    {
+        _settingsRequested();
+    }
+
+    private void ContextDuplicate_Click(object sender, RoutedEventArgs e)
+    {
+        var tile = ContextTile(sender);
+        if (tile is null) return;
+        var siblings = tile.ParentFolders.Count == 0 ? _rootItems : tile.ParentFolders[^1].Children;
+        var copy = tile.Item.CloneDeep();
+        RegenerateIds(copy);
+        copy.Name = string.Format(Loc.Get("Panel.DuplicateName"), copy.Name);
+        var index = siblings.IndexOf(tile.Item);
+        siblings.Insert(index < 0 ? siblings.Count : index + 1, copy);
+        _onItemsChanged(_rootItems);
+        RefreshTiles();
+    }
+
+    private static void RegenerateIds(PanelItem item)
+    {
+        item.Id = Guid.NewGuid().ToString("N");
+        foreach (var child in item.Children ?? new List<PanelItem>()) RegenerateIds(child);
+    }
+
+    private void ContextDelete_Click(object sender, RoutedEventArgs e)
+    {
+        var tile = ContextTile(sender);
+        if (tile is null) return;
+        var result = MessageBox.Show(this, Loc.Format("Panel.ConfirmDelete", tile.Item.Name), "ClapPanel", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result != MessageBoxResult.Yes) return;
+        var siblings = tile.ParentFolders.Count == 0 ? _rootItems : tile.ParentFolders[^1].Children;
+        siblings.Remove(tile.Item);
+        _onItemsChanged(_rootItems);
+        RefreshTiles();
+    }
+
+    private void ContextOpenLocation_Click(object sender, RoutedEventArgs e)
+    {
+        var tile = ContextTile(sender);
+        if (tile is null || string.IsNullOrWhiteSpace(tile.Item.Target)) return;
+        try
+        {
+            var path = Environment.ExpandEnvironmentVariables(tile.Item.Target.Trim());
+            if (File.Exists(path))
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+            else if (Directory.Exists(path))
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true });
+            else
+                MessageBox.Show(this, Loc.Get("Panel.LocationUnavailable"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch { MessageBox.Show(this, Loc.Get("Panel.LocationUnavailable"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
 
 

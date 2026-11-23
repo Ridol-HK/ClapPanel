@@ -4,7 +4,14 @@
 
 ClapPanel is a Windows 10/11 application that opens and closes a shortcut panel when it detects a double clap.
 
-**Latest version: 1.5.0**
+**Latest version: 1.6.0**
+
+## Version 1.6.0 highlights
+
+- Detects application, file, and folder shortcuts whose targets are no longer available and marks them visually.
+- Right-click context menu to edit, duplicate, delete, or open an item's location.
+- Optional automatic panel closing after successfully launching an application or file.
+- **Settings → System Status** page for the clap detector, microphone, global shortcut, configuration, custom images, backups, Windows startup, and installed version.
 
 ## Features
 
@@ -23,6 +30,9 @@ ClapPanel is a Windows 10/11 application that opens and closes a shortcut panel 
 - First-run setup assistant to choose and test the microphone, adjust sensitivity, and configure the global shortcut.
 - Smart dock can show 1–12 shortcuts, prioritize favorites, and customize the screen-edge reveal zone width.
 - Optional Windows startup and system tray icon.
+- Full configuration export and import through ZIP archives, including shortcuts, categories, nested folders, appearance profiles, and custom images.
+- Shortcut-only import that leaves appearance and all other preferences unchanged.
+- Automatic local backups before settings are overwritten, imported, or reset, plus recovery from the latest valid backup if the settings file becomes corrupted.
 
 ## Requirements
 
@@ -66,6 +76,10 @@ dotnet publish src/ClapPanel -c Release -r win-x64 --self-contained -p:PublishSi
 - **Drag Windows executables, shortcuts, files, or folders onto the panel:** creates shortcuts. Dropping an item onto an internal folder adds it to that folder.
 - **Esc:** clears the search first; when the search is already empty, it closes the panel. The × button does the same.
 - **Keyboard controls:** see [Keyboard and accessibility](#keyboard-and-accessibility).
+
+## Backups and configuration transfer
+
+From **Settings → General**, use **Export configuration** to create a ZIP archive or **Import configuration** to restore one. Archives include the shortcut tree (including categories and nested folders), appearance profiles, settings, and custom images. **Import shortcuts only** replaces the shortcut tree while keeping appearance and every other preference unchanged. ClapPanel also keeps up to 20 rolling local backups in `%APPDATA%\ClapPanel\backups`; backups are created before major configuration changes are saved, imported, or reset. High-frequency state updates such as window movement and note autosave do not create a new archive each time. If `settings.json` becomes invalid or a managed custom image is missing, the app attempts to recover the newest valid backup automatically. Use **Restore latest backup** to restore one manually.
 
 ## Keyboard and accessibility
 

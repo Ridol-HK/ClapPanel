@@ -39,6 +39,7 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                         <CheckBox x:Name="AllowPanelMovementCheck" IsChecked="True" Margin="0,0,0,10">
                             <TextBlock Text="{loc:Tr Settings.AllowMove}" TextWrapping="Wrap" />
                         </CheckBox>
+                        <CheckBox x:Name="CloseAfterLaunchCheck" Content="{loc:Tr Settings.CloseAfterLaunch}" Margin="0,0,0,10" />
                         <CheckBox x:Name="RememberCategoryCheck" Margin="0,0,0,16">
                             <TextBlock Text="{loc:Tr Settings.RememberCategory}" TextWrapping="Wrap" />
                         </CheckBox>
@@ -121,6 +122,17 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                             <ComboBoxItem Content="F11" Tag="122" /><ComboBoxItem Content="F12" Tag="123" />
                         </ComboBox>
                         <TextBlock Text="{loc:Tr Settings.GlobalShortcutHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,16" />
+
+                        <Separator Margin="0,0,0,14" />
+                        <TextBlock Text="{loc:Tr Settings.BackupTitle}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBlock Text="{loc:Tr Settings.BackupHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,10" />
+                        <WrapPanel Margin="0,0,0,4">
+                            <Button Content="{loc:Tr Settings.ExportConfig}" Padding="12,6" Margin="0,0,8,8" Click="ExportConfig_Click" />
+                            <Button Content="{loc:Tr Settings.ImportConfig}" Padding="12,6" Margin="0,0,8,8" Click="ImportConfig_Click" />
+                            <Button Content="{loc:Tr Settings.ImportShortcuts}" Padding="12,6" Margin="0,0,8,8" Click="ImportShortcuts_Click" />
+                            <Button Content="{loc:Tr Settings.RestoreBackup}" Padding="12,6" Margin="0,0,8,8" Click="RestoreBackup_Click" />
+                        </WrapPanel>
+                        <TextBlock x:Name="BackupStatusText" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,14" />
 
                         <Separator Margin="0,0,0,14" />
                         <TextBlock Text="{loc:Tr Settings.Actions}" FontWeight="SemiBold" Margin="0,0,0,10" />
@@ -306,7 +318,7 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="{loc:Tr Settings.TabIcons}">
+            <TabItem x:Name="IconsTab" Header="{loc:Tr Settings.TabIcons}">
                 <DockPanel Margin="16">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
                         <TextBlock Text="{loc:Tr Settings.Columns}" />
@@ -366,6 +378,15 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                         </StackPanel>
 
                         <CheckBox x:Name="MediaWidgetCheck" Content="{loc:Tr Widgets.Media}" FontWeight="SemiBold" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="{loc:Tr Settings.TabSystemStatus}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="{loc:Tr Settings.SystemStatusHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,12" />
+                        <TextBlock x:Name="SystemStatusText" TextWrapping="Wrap" FontFamily="Consolas" />
+                        <Button Content="{loc:Tr Settings.RefreshStatus}" HorizontalAlignment="Left" Padding="12,6" Margin="0,14,0,0" Click="RefreshSystemStatus_Click" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

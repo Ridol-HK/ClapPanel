@@ -15,10 +15,17 @@ public sealed class SettingsService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    private readonly string _path = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "ClapPanel",
-        "settings.json");
+    private readonly string _path;
+
+    public SettingsService(string? directory = null)
+    {
+        var rootDirectory = Path.GetFullPath(directory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ClapPanel"));
+        _path = Path.Combine(rootDirectory, "settings.json");
+        Archives = new ConfigurationArchiveService(rootDirectory);
+    }
+
+    public ConfigurationArchiveService Archives { get; }
 
     public AppSettings Load()
     {
@@ -31,7 +38,12 @@ public sealed class SettingsService
 
             var json = File.ReadAllText(_path);
             using var document = JsonDocument.Parse(json);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                throw new InvalidDataException("The settings file does not contain a JSON object.");
+            }
+            var settings = JsonSerializer.Deserialize<AppSettings>(json)
+                ?? throw new InvalidDataException("The settings file does not contain a valid configuration.");
 
             // Existing installations predate the first-run assistant. Treat a
             // legacy settings file without this property as already configured,
@@ -43,25 +55,120 @@ public sealed class SettingsService
             }
 
             Normalize(settings);
+            if (Archives.HasMissingManagedImages(settings)
+                && Archives.TryRestoreLatestBackup(out var recoveredImages) && recoveredImages is not null)
+            {
+                try
+                {
+                    WriteSettingsAtomically(recoveredImages);
+                    return recoveredImages;
+                }
+                catch
+                {
+                    return recoveredImages;
+                }
+            }
+
             return settings;
         }
         catch
         {
+            // A malformed settings.json should not silently discard the user's
+            // configuration. Recover the newest valid local archive first.
+            if (Archives.TryRestoreLatestBackup(out var recovered) && recovered is not null)
+            {
+                try
+                {
+                    WriteSettingsAtomically(recovered);
+                    return recovered;
+                }
+                catch
+                {
+                    QuarantineDamagedFile();
+                    // The recovered object can still be used for this session even
+                    // when the damaged disk cannot be overwritten.
+                    return recovered;
+                }
+            }
+
+            // Do not let a broken file block the user's next attempt to save a
+            // fresh configuration when no valid backup exists.
+            QuarantineDamagedFile();
             return new AppSettings();
         }
     }
 
-    public void Save(AppSettings settings)
+    public void Save(AppSettings settings, bool createBackup = true)
     {
         Normalize(settings);
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        File.WriteAllText(_path, JsonSerializer.Serialize(settings, JsonOptions));
+
+        // User-initiated configuration changes keep a recoverable snapshot.
+        // High-frequency state persistence (window position, size, category
+        // selection, and note autosave) can opt out to avoid filling the backup
+        // rotation with near-identical archives.
+        var hadPreviousSettings = File.Exists(_path);
+        if (hadPreviousSettings && createBackup)
+        {
+            Archives.CreateBackup();
+        }
+
+        WriteSettingsAtomically(settings);
+        if (!hadPreviousSettings)
+        {
+            // Keep a baseline snapshot after the first successful save so even
+            // a newly configured installation has a recovery point.
+            Archives.CreateBackup();
+        }
     }
 
-    private static void Normalize(AppSettings settings)
+    private void WriteSettingsAtomically(AppSettings settings)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        var temporaryPath = _path + ".tmp";
+        try
+        {
+            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings, JsonOptions));
+            File.Move(temporaryPath, _path, overwrite: true);
+        }
+        catch
+        {
+            try
+            {
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+            }
+            catch
+            {
+            }
+            throw;
+        }
+    }
+
+    private void QuarantineDamagedFile()
+    {
+        try
+        {
+            if (File.Exists(_path))
+            {
+                var quarantinePath = _path + ".corrupt_" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss_fff");
+                File.Move(_path, quarantinePath, overwrite: true);
+            }
+        }
+        catch
+        {
+            // If the profile directory is read-only, continue with in-memory defaults.
+        }
+    }
+
+    internal static void Normalize(AppSettings settings)
     {
         settings.Items ??= new List<PanelItem>();
+        settings.Items.RemoveAll(item => item is null);
         settings.AppearanceProfiles ??= new List<AppearanceProfile>();
+        settings.AppearanceProfiles.RemoveAll(profile => profile is null);
         settings.MonitorPositions ??= new Dictionary<string, PanelPositionData>(StringComparer.OrdinalIgnoreCase);
         settings.Appearance ??= new AppearanceSettings();
         settings.Detection ??= new DetectionOptions();
@@ -77,11 +184,19 @@ public sealed class SettingsService
         settings.LastSelectedCategory ??= "";
         foreach (var item in settings.Items)
         {
-            NormalizeItem(item);
+            if (item is not null)
+            {
+                NormalizeItem(item);
+            }
         }
 
         foreach (var profile in settings.AppearanceProfiles)
         {
+            if (profile is null)
+            {
+                continue;
+            }
+
             profile.Appearance ??= new AppearanceSettings();
             profile.Appearance.SmartDockVisibleItems = Math.Clamp(profile.Appearance.SmartDockVisibleItems, 1, 12);
             profile.Appearance.SmartDockRevealThresholdPixels = Math.Clamp(profile.Appearance.SmartDockRevealThresholdPixels, 4, 40);
@@ -97,9 +212,13 @@ public sealed class SettingsService
         item.AdditionalCategories ??= new List<string>();
         item.NormalizeCategories();
         item.Children ??= new List<PanelItem>();
+        item.Children.RemoveAll(child => child is null);
         foreach (var child in item.Children)
         {
-            NormalizeItem(child);
+            if (child is not null)
+            {
+                NormalizeItem(child);
+            }
         }
     }
 }

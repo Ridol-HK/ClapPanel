@@ -182,7 +182,7 @@ public partial class App : Application
             _launcher,
             _icons,
             ReorderItems,
-            () => OpenSettings(selectAppearance: true),
+            OpenSettingsForItems,
             GetSavedPanelPosition(),
             _settings.AllowPanelMovement,
             PersistPanelPosition,
@@ -194,10 +194,24 @@ public partial class App : Application
             _clipboardHistory,
             PersistNotes,
             _settings.RememberCategorySelection ? _settings.LastSelectedCategory : "",
-            PersistCategoryFilter);
+            PersistCategoryFilter,
+            _settings.ClosePanelAfterLaunch);
         _panel.Closed += (_, _) => _panel = null;
         _panel.Show();
         _panel.Activate();
+    }
+
+    private void OpenSettingsForItems()
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.SelectIconsTab();
+            _settingsWindow.Activate();
+            return;
+        }
+
+        OpenSettings();
+        _settingsWindow?.SelectIconsTab();
     }
 
     private void OpenSettings(bool selectAppearance = false)
@@ -221,6 +235,7 @@ public partial class App : Application
             _detector,
             _imageStore,
             _icons,
+            _settingsService.Archives,
             SaveSettings,
             PreviewAppearance,
             StopMicrophoneCapture,
@@ -316,13 +331,13 @@ public partial class App : Application
         layout.Left = position.X;
         layout.Top = position.Y;
         _settingsWindow?.UpdatePanelPosition(position.X, position.Y);
-        _settingsService.Save(_settings);
+        _settingsService.Save(_settings, createBackup: false);
     }
 
     private void PersistPanelDockEdge(PanelDockEdge edge)
     {
         _settings.Appearance.DockEdge = edge;
-        _settingsService.Save(_settings);
+        _settingsService.Save(_settings, createBackup: false);
     }
 
     private void PersistPanelSize(Size size, bool verticalDocked)
@@ -339,7 +354,7 @@ public partial class App : Application
             layout.Height = size.Height;
         }
 
-        _settingsService.Save(_settings);
+        _settingsService.Save(_settings, createBackup: false);
     }
 
     private void PreviewAppearance(AppearanceSettings appearance, int columns, double? panelLeft, double? panelTop)
@@ -407,7 +422,7 @@ public partial class App : Application
     private void PersistNotes(string notes)
     {
         _settings.Widgets.Notes = notes;
-        _settingsService.Save(_settings);
+        _settingsService.Save(_settings, createBackup: false);
     }
 
     private void PersistCategoryFilter(string category)
@@ -418,7 +433,7 @@ public partial class App : Application
         }
 
         _settings.LastSelectedCategory = category;
-        _settingsService.Save(_settings);
+        _settingsService.Save(_settings, createBackup: false);
     }
 
     private void OpenAbout()
@@ -477,7 +492,8 @@ public partial class App : Application
                 settings.Appearance,
                 GetSavedPanelPosition(),
                 settings.AllowPanelMovement,
-                settings.RememberCategorySelection ? settings.LastSelectedCategory : "");
+                settings.RememberCategorySelection ? settings.LastSelectedCategory : "",
+                settings.ClosePanelAfterLaunch);
             _panel?.ApplyWidgets(settings.Widgets);
         }
 

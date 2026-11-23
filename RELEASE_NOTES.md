@@ -1,20 +1,25 @@
 [English](RELEASE_NOTES.en.md) | [Español](RELEASE_NOTES.md)
 
-## ClapPanel 1.5.0
+## ClapPanel 1.6.0
 
 Aplicación para Windows 10/11 que abre y cierra un panel de accesos directos al detectar un doble aplauso.
 
 ### Novedades
 
-- Monitor de micrófono y diagnóstico en tiempo real, con niveles de entrada, datos del dispositivo y errores de captura.
-- Atajo de teclado global configurable (Ctrl + Alt + Espacio de forma predeterminada).
-- Asistente de configuración inicial para probar el micrófono y elegir sensibilidad, atajo e inicio con Windows; se omite automáticamente en instalaciones existentes.
-- Acople inteligente personalizable: de 1 a 12 accesos visibles, prioridad de favoritos y zona de activación de borde ajustable.
-- La navegación con flechas reinicia el contador de inactividad y mantiene la opacidad del panel mientras se usa el teclado.
+- Detección de accesos rotos para aplicaciones, archivos y carpetas con destino configurado.
+- Menú contextual con opciones para editar, duplicar, eliminar y abrir la ubicación de un acceso.
+- Opción para cerrar automáticamente el panel después de ejecutar una aplicación o archivo.
+- Nueva sección Estado del sistema en Ajustes con el estado de los componentes principales y la versión instalada.
+
+- Exportación e importación de la configuración completa mediante ZIP, con accesos directos, categorías, carpetas anidadas, perfiles visuales e imágenes personalizadas.
+- Importación de solo los accesos directos para conservar la apariencia y el resto de las preferencias.
+- Copias de seguridad automáticas antes de sobrescribir ajustes, importar una configuración o restablecer los valores predeterminados.
+- Recuperación automática desde la última copia válida cuando el archivo de configuración se daña y restauración manual desde Ajustes → General.
+- Se mantienen hasta 20 copias de seguridad locales rotativas en `%APPDATA%\ClapPanel\backups`.
 
 ### Instalación
 
-1. Descarga `ClapPanel-v1.5.0-win-x64.zip` desde los archivos de esta versión.
+1. Descarga `ClapPanel-v1.6.0-win-x64.zip` desde los archivos de esta versión.
 2. Extrae el contenido y ejecuta `ClapPanel.exe`.
 
 No hace falta instalar .NET. Como el ejecutable no está firmado, Windows SmartScreen puede mostrar un aviso: elige «Más información» y luego «Ejecutar de todos modos».

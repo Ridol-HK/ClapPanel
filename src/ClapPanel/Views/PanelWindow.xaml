@@ -273,6 +273,15 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                                         PreviewMouseMove="Tile_MouseMove"
                                         DragOver="Panel_DragOver"
                                         Drop="Tile_Drop">
+                                    <Button.ContextMenu>
+                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                            <MenuItem Header="{loc:Tr Panel.ContextEdit}" Click="ContextEdit_Click" />
+                                            <MenuItem Header="{loc:Tr Panel.ContextDuplicate}" Click="ContextDuplicate_Click" />
+                                            <Separator />
+                                            <MenuItem Header="{loc:Tr Panel.ContextOpenLocation}" Click="ContextOpenLocation_Click" />
+                                            <MenuItem Header="{loc:Tr Panel.ContextDelete}" Click="ContextDelete_Click" />
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
                                     <Grid>
                                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                             <Image Source="{Binding Icon}"

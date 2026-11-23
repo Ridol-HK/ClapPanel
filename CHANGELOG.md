@@ -6,6 +6,35 @@ Todos los cambios relevantes de ClapPanel se documentan en este archivo.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-22
+
+### Añadido
+
+- Detección visual de accesos no disponibles: comprueba los destinos de aplicaciones, archivos y carpetas con ruta; los accesos rotos se identifican con un indicador de advertencia.
+- Menú contextual con clic derecho sobre cada acceso para editarlo (abre Ajustes → Iconos y carpetas), duplicarlo, eliminarlo con confirmación o abrir su ubicación en el Explorador.
+- Opción en Ajustes → General para cerrar automáticamente el panel después de ejecutar correctamente una aplicación o archivo. Está desactivada de forma predeterminada.
+- Nueva pestaña «Estado del sistema» en Ajustes, con estado de captura/detector, micrófono, atajo global, configuración, imágenes personalizadas, copias de seguridad, inicio con Windows, versión y cantidad de destinos no disponibles.
+- Localización al español e inglés de las nuevas opciones, acciones y estados.
+
+### Cambiado
+
+- La versión del proyecto pasa a 1.6.0.
+
+## [1.5.1] - 2026-11-22
+
+### Añadido
+
+- Exportación de toda la configuración a un archivo ZIP portable, con accesos directos, categorías, carpetas anidadas, perfiles visuales e imágenes personalizadas.
+- Importación de una configuración completa desde un ZIP, con remapeo de las rutas de las imágenes al directorio local de ClapPanel.
+- Importación exclusiva de accesos directos: reemplaza los elementos, categorías, carpetas e imágenes, sin cambiar la apariencia ni las demás preferencias.
+- Copias de seguridad locales rotativas (hasta 20 archivos) antes de guardar cambios importantes de configuración, importar o restablecer los valores predeterminados; las escrituras frecuentes de posición, tamaño, categoría y notas no generan copias repetidas.
+- Restauración manual de la copia local más reciente y recuperación automática desde la última copia válida cuando `settings.json` está dañado o no se puede leer.
+- Validación del contenido de los archivos ZIP y de las rutas de las imágenes para evitar entradas de archivo inseguras.
+
+### Cambiado
+
+- La versión del proyecto pasa a 1.5.1.
+
 ## [1.5.0] - 2026-11-22
 
 ### Añadido
@@ -105,6 +134,8 @@ Esta entrada agrupa todo lo añadido desde la 1.1.0 (versiones 1.2.x y 1.3.x).
 - Instancia única y configuración en JSON dentro del perfil del usuario.
 - Licencia GPL-3.0 o posterior.
 
+[1.6.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.6.0
+[1.5.1]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.5.0
 [1.4.3]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.4.3
 [1.4.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.4.0

@@ -6,6 +6,35 @@ All notable changes to ClapPanel are documented in this file.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-22
+
+### Added
+
+- Visual detection of unavailable shortcuts: checks application, file, and path-based folder targets; broken entries display a warning indicator.
+- Right-click context menu for each shortcut to edit it (opens Settings → Icons and folders), duplicate it, delete it with confirmation, or open its location in File Explorer.
+- New Settings → General option to automatically close the panel after an application or file launches successfully. Disabled by default.
+- New System Status tab in Settings showing capture/clap detector, microphone, global shortcut, configuration, custom images, backups, Windows startup, app version, and the number of unavailable targets.
+- Spanish and English localization for all new options, actions, and statuses.
+
+### Changed
+
+- Project version set to 1.6.0.
+
+## [1.5.1] - 2026-11-22
+
+### Added
+
+- Export the complete configuration to a portable ZIP archive, including shortcuts, categories, nested folders, appearance profiles, and custom images.
+- Import a complete ZIP configuration and remap image paths to ClapPanel's local image directory.
+- Import shortcuts only: replace shortcut items, categories, folders, and images without changing appearance or other preferences.
+- Rolling local backups (up to 20 files) before saving major configuration changes, importing, or restoring defaults; frequent position, size, category, and notes writes do not create repetitive archives.
+- Manually restore the latest local backup and automatically recover from the newest valid backup when `settings.json` is damaged or unreadable.
+- Validate ZIP contents and image paths to reject unsafe archive entries.
+
+### Changed
+
+- Project version set to 1.5.1.
+
 ## [1.5.0] - 2026-11-22
 
 ### Added
@@ -105,6 +134,8 @@ This entry groups everything added since 1.1.0 (versions 1.2.x and 1.3.x).
 - Single-instance application and JSON settings stored in the user's profile.
 - GPL-3.0-or-later license.
 
+[1.6.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.6.0
+[1.5.1]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.5.0
 [1.4.3]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.4.3
 [1.4.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.4.0
