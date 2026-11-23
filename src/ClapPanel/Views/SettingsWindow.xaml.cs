@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ using System.Windows.Threading;
 using ClapPanel.Audio;
 using ClapPanel.Detection;
 using ClapPanel.Launcher;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 using ClapPanel.Theming;
 using Forms = System.Windows.Forms;
@@ -32,13 +34,16 @@ public partial class SettingsWindow : Window
         "#0078D4", "#E81123", "#10893E", "#FFB900", "#8E24AA", "#00B7C3", "#F7630C", "#E3008C"
     };
 
+    private readonly AppSettings _settingsSource;
     private readonly AudioDeviceProvider _provider;
+    private readonly MicrophoneService _microphone;
     private readonly ClapDetector _detector;
     private readonly ImageStore _store;
     private readonly IconProvider _icons;
     private readonly Action<AppSettings> _onSave;
     private readonly Action<AppearanceSettings, int, double?, double?>? _onAppearancePreview;
     private readonly Action _stopMicrophoneRequested;
+    private readonly Action<string?> _testMicrophoneRequested;
     private readonly Action _exitApplicationRequested;
     private readonly AppearanceSettings _originalAppearance;
     private readonly int _originalColumns;
@@ -50,6 +55,7 @@ public partial class SettingsWindow : Window
     private readonly ObservableCollection<AppearanceProfile> _profiles;
     private readonly Dictionary<string, PanelPositionData> _monitorPositions;
     private DetectionOptions _detection;
+    private readonly WidgetSettings _widgets;
     private double? _panelLeft;
     private double? _panelTop;
     private PanelPosition _lastPreviewPosition;
@@ -57,6 +63,10 @@ public partial class SettingsWindow : Window
     private string _lastPreviewMonitor;
     private bool _loading = true;
     private bool _saved;
+    private bool _categorySelectionReset;
+    private readonly DispatcherTimer _micStatusTimer;
+    private DateTime _lastRawSignalUtc = DateTime.MinValue;
+    private float _lastRawPeak;
 
     private sealed class MonitorOption
     {
@@ -67,25 +77,31 @@ public partial class SettingsWindow : Window
     public SettingsWindow(
         AppSettings settings,
         AudioDeviceProvider provider,
+        MicrophoneService microphone,
         ClapDetector detector,
         ImageStore store,
         IconProvider icons,
         Action<AppSettings> onSave,
         Action<AppearanceSettings, int, double?, double?>? onAppearancePreview,
         Action stopMicrophoneRequested,
+        Action<string?> testMicrophoneRequested,
         Action exitApplicationRequested,
         bool openAppearanceTab = false)
     {
         InitializeComponent();
 
+        _settingsSource = settings;
         _provider = provider;
+        _microphone = microphone;
         _detector = detector;
         _detection = settings.Detection.Clone();
+        _widgets = settings.Widgets;
         _store = store;
         _icons = icons;
         _onSave = onSave;
         _onAppearancePreview = onAppearancePreview;
         _stopMicrophoneRequested = stopMicrophoneRequested;
+        _testMicrophoneRequested = testMicrophoneRequested;
         _exitApplicationRequested = exitApplicationRequested;
         _originalAppearance = settings.Appearance.Clone();
         _originalColumns = settings.Columns;
@@ -113,8 +129,17 @@ public partial class SettingsWindow : Window
         SensitivitySlider.Value = settings.Sensitivity;
         StartupCheck.IsChecked = settings.StartWithWindows;
         AllowPanelMovementCheck.IsChecked = settings.AllowPanelMovement;
+        RememberCategoryCheck.IsChecked = settings.RememberCategorySelection;
+        var globalShortcut = settings.GlobalShortcut ?? new GlobalShortcutSettings();
+        HotkeyEnabledCheck.IsChecked = globalShortcut.Enabled;
+        HotkeyCtrlCheck.IsChecked = (globalShortcut.Modifiers & GlobalShortcutSettings.Control) != 0;
+        HotkeyAltCheck.IsChecked = (globalShortcut.Modifiers & GlobalShortcutSettings.Alt) != 0;
+        HotkeyShiftCheck.IsChecked = (globalShortcut.Modifiers & GlobalShortcutSettings.Shift) != 0;
+        HotkeyWinCheck.IsChecked = (globalShortcut.Modifiers & GlobalShortcutSettings.Windows) != 0;
+        SelectByTag(HotkeyKeyCombo, globalShortcut.VirtualKeyCode.ToString(CultureInfo.InvariantCulture));
         ColumnsSlider.Value = Math.Clamp(settings.Columns, 1, 10);
         ItemsList.ItemsSource = _items;
+        ListBoxReorderBehavior.Attach(ItemsList);
         ProfileCombo.ItemsSource = _profiles;
         var appearance = settings.Appearance;
         BuildMonitorOptions(appearance.MonitorDeviceName);
@@ -148,6 +173,8 @@ public partial class SettingsWindow : Window
         OpacitySlider.Value = AppearanceLayout.Opacity(appearance) * 100;
         DynamicTransparencyCheck.IsChecked = appearance.DynamicTransparency;
         InactiveOpacitySlider.Value = Math.Clamp(appearance.InactiveOpacity, 0.2, 1.0) * 100;
+        InactiveOpacityDelaySlider.Value = Math.Clamp(appearance.InactiveOpacityDelaySeconds, 0, 5);
+        AnimateInactiveOpacityCheck.IsChecked = appearance.AnimateInactiveOpacity;
         IconSizeSlider.Value = AppearanceLayout.IconSize(appearance);
         ShowNamesCheck.IsChecked = appearance.ShowNames;
         RoundedCheck.IsChecked = appearance.RoundedCorners;
@@ -158,13 +185,31 @@ public partial class SettingsWindow : Window
         SelectByTag(DockEdgeCombo, appearance.DockEdge.ToString());
         AutoHideCheck.IsChecked = appearance.AutoHide;
         AutoHideDelaySlider.Value = Math.Clamp(appearance.AutoHideDelaySeconds, 1, 30);
+        SmartDockVisibleItemsSlider.Value = Math.Clamp(appearance.SmartDockVisibleItems, 1, 12);
+        SmartDockPrioritizeFavoritesCheck.IsChecked = appearance.SmartDockPrioritizeFavorites;
+        SmartDockRevealThresholdSlider.Value = Math.Clamp(appearance.SmartDockRevealThresholdPixels, 4, 40);
+        HighContrastCheck.IsChecked = appearance.HighContrast;
+        ShortcutNumbersCheck.IsChecked = appearance.ShowShortcutNumbers;
+        SelectByTag(LanguageCombo, settings.Language.ToString());
+        ApplyWidgetControls(settings.Widgets);
+
         BuildSwatches(BackgroundSwatches, BackgroundPalette, BackgroundBox);
         BuildSwatches(AccentSwatches, AccentPalette, AccentBox);
 
         _detector.LevelMeasured += OnLevelChanged;
+        _microphone.AudioLevelMeasured += OnRawAudioLevelChanged;
+        _micStatusTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromMilliseconds(500)
+        };
+        _micStatusTimer.Tick += (_, _) => RefreshMicrophoneDiagnostics();
+        _micStatusTimer.Start();
+        RefreshMicrophoneDiagnostics();
         Closed += (_, _) =>
         {
             _detector.LevelMeasured -= OnLevelChanged;
+            _microphone.AudioLevelMeasured -= OnRawAudioLevelChanged;
+            _micStatusTimer.Stop();
             // Closing with Cancel or the window's X restores the appearance
             // that was active before the user opened this dialog.
             if (!_saved)
@@ -215,7 +260,7 @@ public partial class SettingsWindow : Window
         MonitorCombo.ItemsSource = screens.Select((screen, index) => new MonitorOption
         {
             DeviceName = screen.DeviceName,
-            DisplayName = $"Monitor {index + 1} — {screen.Bounds.Width} × {screen.Bounds.Height}{(screen.Primary ? " (principal)" : "")}" 
+            DisplayName = Loc.Format("Settings.MonitorName", index + 1, screen.Bounds.Width, screen.Bounds.Height, screen.Primary ? Loc.Get("Settings.MonitorPrimary") : "")
         }).ToList();
         MonitorCombo.SelectedValue = string.IsNullOrWhiteSpace(preferredDeviceName)
             ? Forms.Screen.PrimaryScreen?.DeviceName
@@ -291,10 +336,35 @@ public partial class SettingsWindow : Window
             Animation = ParseEnum(SelectedTag(AnimationStyleCombo), PanelAnimationStyle.Scale) != PanelAnimationStyle.None,
             AutoHide = AutoHideCheck.IsChecked == true,
             AutoHideDelaySeconds = (int)AutoHideDelaySlider.Value,
+            SmartDockVisibleItems = (int)SmartDockVisibleItemsSlider.Value,
+            SmartDockPrioritizeFavorites = SmartDockPrioritizeFavoritesCheck.IsChecked == true,
+            SmartDockRevealThresholdPixels = (int)SmartDockRevealThresholdSlider.Value,
             DockEdge = ParseEnum(SelectedTag(DockEdgeCombo), PanelDockEdge.None),
             DynamicTransparency = DynamicTransparencyCheck.IsChecked == true,
             InactiveOpacity = InactiveOpacitySlider.Value / 100.0,
+            InactiveOpacityDelaySeconds = InactiveOpacityDelaySlider.Value,
+            AnimateInactiveOpacity = AnimateInactiveOpacityCheck.IsChecked == true,
+            HighContrast = HighContrastCheck.IsChecked == true,
+            ShowShortcutNumbers = ShortcutNumbersCheck.IsChecked == true,
             MonitorDeviceName = SelectedMonitorDeviceName()
+        };
+    }
+
+    private GlobalShortcutSettings ReadGlobalShortcut()
+    {
+        var modifiers = 0;
+        if (HotkeyCtrlCheck.IsChecked == true) modifiers |= GlobalShortcutSettings.Control;
+        if (HotkeyAltCheck.IsChecked == true) modifiers |= GlobalShortcutSettings.Alt;
+        if (HotkeyShiftCheck.IsChecked == true) modifiers |= GlobalShortcutSettings.Shift;
+        if (HotkeyWinCheck.IsChecked == true) modifiers |= GlobalShortcutSettings.Windows;
+
+        return new GlobalShortcutSettings
+        {
+            Enabled = HotkeyEnabledCheck.IsChecked == true,
+            Modifiers = modifiers,
+            VirtualKeyCode = int.TryParse(HotkeyKeyCombo.SelectedValue as string, NumberStyles.Integer, CultureInfo.InvariantCulture, out var keyCode)
+                ? keyCode
+                : 0x20
         };
     }
 
@@ -364,15 +434,15 @@ public partial class SettingsWindow : Window
     private void StopMicrophone_Click(object sender, RoutedEventArgs e)
     {
         _stopMicrophoneRequested();
-        MicrophoneStatusText.Text = "La captura está detenida. Para reanudarla, desmarca «Pausar escucha» desde el icono de ClapPanel en la bandeja del sistema.";
+        MicrophoneStatusText.Text = Loc.Get("Settings.MicStopped");
     }
 
     private void ExitApplication_Click(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(
             this,
-            "¿Querés cerrar ClapPanel por completo?",
-            "Cerrar ClapPanel",
+            Loc.Get("Settings.ExitConfirm"),
+            Loc.Get("Settings.ExitApp"),
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
@@ -386,8 +456,8 @@ public partial class SettingsWindow : Window
     {
         var result = MessageBox.Show(
             this,
-            "Se restaurarán los ajustes predeterminados y se eliminarán los iconos personalizados del panel. Esta acción no se puede deshacer. ¿Continuar?",
-            "Restablecer valores",
+            Loc.Get("Settings.ResetConfirm"),
+            Loc.Get("Settings.ResetTitle"),
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -397,6 +467,7 @@ public partial class SettingsWindow : Window
         }
 
         var defaults = new AppSettings();
+        _categorySelectionReset = true;
         _loading = true;
 
         DeviceCombo.SelectedValue = null;
@@ -404,6 +475,13 @@ public partial class SettingsWindow : Window
         SensitivitySlider.Value = defaults.Sensitivity;
         StartupCheck.IsChecked = defaults.StartWithWindows;
         AllowPanelMovementCheck.IsChecked = defaults.AllowPanelMovement;
+        RememberCategoryCheck.IsChecked = defaults.RememberCategorySelection;
+        HotkeyEnabledCheck.IsChecked = defaults.GlobalShortcut.Enabled;
+        HotkeyCtrlCheck.IsChecked = (defaults.GlobalShortcut.Modifiers & GlobalShortcutSettings.Control) != 0;
+        HotkeyAltCheck.IsChecked = (defaults.GlobalShortcut.Modifiers & GlobalShortcutSettings.Alt) != 0;
+        HotkeyShiftCheck.IsChecked = (defaults.GlobalShortcut.Modifiers & GlobalShortcutSettings.Shift) != 0;
+        HotkeyWinCheck.IsChecked = (defaults.GlobalShortcut.Modifiers & GlobalShortcutSettings.Windows) != 0;
+        SelectByTag(HotkeyKeyCombo, defaults.GlobalShortcut.VirtualKeyCode.ToString(CultureInfo.InvariantCulture));
         ColumnsSlider.Value = defaults.Columns;
         _items.Clear();
         ItemsList.SelectedIndex = -1;
@@ -424,16 +502,25 @@ public partial class SettingsWindow : Window
         FullScreenCheck.IsChecked = appearance.FullScreen;
         DynamicTransparencyCheck.IsChecked = appearance.DynamicTransparency;
         InactiveOpacitySlider.Value = appearance.InactiveOpacity * 100;
+        InactiveOpacityDelaySlider.Value = appearance.InactiveOpacityDelaySeconds;
+        AnimateInactiveOpacityCheck.IsChecked = appearance.AnimateInactiveOpacity;
         SelectByTag(AnimationStyleCombo, appearance.AnimationStyle.ToString());
         SelectByTag(PositionCombo, appearance.Position.ToString());
         SelectByTag(DockEdgeCombo, appearance.DockEdge.ToString());
         AutoHideCheck.IsChecked = appearance.AutoHide;
         AutoHideDelaySlider.Value = appearance.AutoHideDelaySeconds;
+        SmartDockVisibleItemsSlider.Value = appearance.SmartDockVisibleItems;
+        SmartDockPrioritizeFavoritesCheck.IsChecked = appearance.SmartDockPrioritizeFavorites;
+        SmartDockRevealThresholdSlider.Value = appearance.SmartDockRevealThresholdPixels;
+        HighContrastCheck.IsChecked = appearance.HighContrast;
+        ShortcutNumbersCheck.IsChecked = appearance.ShowShortcutNumbers;
+        SelectByTag(LanguageCombo, defaults.Language.ToString());
+        ApplyWidgetControls(new WidgetSettings());
         MonitorCombo.SelectedValue = Forms.Screen.PrimaryScreen?.DeviceName;
         _lastPreviewPosition = appearance.Position;
         _lastPreviewMonitor = SelectedMonitorDeviceName();
 
-        MicrophoneStatusText.Text = "Se restauraron los valores predeterminados. La captura del micrófono conserva su estado actual.";
+        MicrophoneStatusText.Text = Loc.Get("Settings.ResetDone");
         _loading = false;
         UpdatePreview();
     }
@@ -441,6 +528,56 @@ public partial class SettingsWindow : Window
     private void OnLevelChanged(object? sender, float level)
     {
         Dispatcher.BeginInvoke(new Action(() => LevelBar.Value = level), DispatcherPriority.Background);
+    }
+
+    private void OnRawAudioLevelChanged(object? sender, MicrophoneLevelEventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            RawPeakBar.Value = Math.Clamp(e.Peak, 0, 1);
+            RawRmsBar.Value = Math.Clamp(e.Rms * 3, 0, 1);
+            _lastRawPeak = e.Peak;
+            if (e.Peak >= 0.008f)
+            {
+                _lastRawSignalUtc = DateTime.UtcNow;
+            }
+
+            MicMeasurementText.Text = Loc.Format("Settings.MicMeasurements", e.Peak * 100, e.Rms * 100, e.SampleRate, e.Channels);
+            RefreshMicrophoneDiagnostics();
+        }), DispatcherPriority.Background);
+    }
+
+    private void RefreshMicrophoneDiagnostics()
+    {
+        if (!_microphone.IsRunning)
+        {
+            MicDeviceStatusText.Text = string.IsNullOrWhiteSpace(_microphone.LastError)
+                ? Loc.Get("Settings.MicNotRunning")
+                : Loc.Format("Settings.MicCaptureError", _microphone.LastError);
+            return;
+        }
+
+        if (_lastRawSignalUtc == DateTime.MinValue || DateTime.UtcNow - _lastRawSignalUtc > TimeSpan.FromSeconds(2))
+        {
+            MicDeviceStatusText.Text = _lastRawPeak > 0.001f
+                ? Loc.Get("Settings.MicQuiet")
+                : Loc.Get("Settings.MicWaitingSignal");
+        }
+        else
+        {
+            MicDeviceStatusText.Text = Loc.Format("Settings.MicSignalDetected", _microphone.ActiveDeviceName ?? "");
+        }
+    }
+
+    private void TestMicrophone_Click(object sender, RoutedEventArgs e)
+    {
+        _lastRawSignalUtc = DateTime.MinValue;
+        _lastRawPeak = 0;
+        RawPeakBar.Value = 0;
+        RawRmsBar.Value = 0;
+        MicMeasurementText.Text = "—";
+        _testMicrophoneRequested(DeviceCombo.SelectedValue as string);
+        RefreshMicrophoneDiagnostics();
     }
 
     private void Add_Click(object sender, RoutedEventArgs e)
@@ -510,7 +647,7 @@ public partial class SettingsWindow : Window
 
     private void AddFolder_Click(object sender, RoutedEventArgs e)
     {
-        var folder = new PanelItem { Kind = PanelItemKind.Folder, Name = "Nueva carpeta" };
+        var folder = new PanelItem { Kind = PanelItemKind.Folder, Name = Loc.Get("Common.NewFolder") };
         var editor = new ItemEditorWindow(folder, _store, _icons) { Owner = this };
         if (editor.ShowDialog() == true)
         {
@@ -523,7 +660,7 @@ public partial class SettingsWindow : Window
     {
         if (ItemsList.SelectedItem is not PanelItem { IsFolder: true } folder)
         {
-            MessageBox.Show(this, "Selecciona primero una carpeta.", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.Get("Settings.SelectFolderFirst"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -537,7 +674,7 @@ public partial class SettingsWindow : Window
         var name = ProfileNameBox.Text.Trim();
         if (name.Length == 0)
         {
-            MessageBox.Show(this, "Escribe un nombre para el perfil.", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.Get("Settings.ProfileNameRequired"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -577,6 +714,8 @@ public partial class SettingsWindow : Window
         OpacitySlider.Value = AppearanceLayout.Opacity(appearance) * 100;
         DynamicTransparencyCheck.IsChecked = appearance.DynamicTransparency;
         InactiveOpacitySlider.Value = Math.Clamp(appearance.InactiveOpacity, 0.2, 1.0) * 100;
+        InactiveOpacityDelaySlider.Value = Math.Clamp(appearance.InactiveOpacityDelaySeconds, 0, 5);
+        AnimateInactiveOpacityCheck.IsChecked = appearance.AnimateInactiveOpacity;
         IconSizeSlider.Value = AppearanceLayout.IconSize(appearance);
         ShowNamesCheck.IsChecked = appearance.ShowNames;
         RoundedCheck.IsChecked = appearance.RoundedCorners;
@@ -586,6 +725,11 @@ public partial class SettingsWindow : Window
         SelectByTag(DockEdgeCombo, appearance.DockEdge.ToString());
         AutoHideCheck.IsChecked = appearance.AutoHide;
         AutoHideDelaySlider.Value = Math.Clamp(appearance.AutoHideDelaySeconds, 1, 30);
+        SmartDockVisibleItemsSlider.Value = Math.Clamp(appearance.SmartDockVisibleItems, 1, 12);
+        SmartDockPrioritizeFavoritesCheck.IsChecked = appearance.SmartDockPrioritizeFavorites;
+        SmartDockRevealThresholdSlider.Value = Math.Clamp(appearance.SmartDockRevealThresholdPixels, 4, 40);
+        HighContrastCheck.IsChecked = appearance.HighContrast;
+        ShortcutNumbersCheck.IsChecked = appearance.ShowShortcutNumbers;
         MonitorCombo.SelectedValue = string.IsNullOrWhiteSpace(appearance.MonitorDeviceName)
             ? Forms.Screen.PrimaryScreen?.DeviceName
             : appearance.MonitorDeviceName;
@@ -624,13 +768,43 @@ public partial class SettingsWindow : Window
             if (window.ShowDialog() == true && window.Sensitivity is { } sensitivity)
             {
                 SensitivitySlider.Value = sensitivity;
-                CalibrationText.Text = $"Sensibilidad calibrada: {sensitivity}. Pulsa Guardar para aplicarla.";
+                CalibrationText.Text = Loc.Format("Settings.Calibrated", sensitivity);
             }
         }
         finally
         {
             _detector.Muted = false;
         }
+    }
+
+    private void ApplyWidgetControls(WidgetSettings widgets)
+    {
+        ClockWidgetCheck.IsChecked = widgets.ShowClock;
+        Clock24Check.IsChecked = widgets.ClockUse24Hours;
+        ClockSecondsCheck.IsChecked = widgets.ClockShowSeconds;
+        ClockDateCheck.IsChecked = widgets.ClockShowDate;
+        NotesWidgetCheck.IsChecked = widgets.ShowNotes;
+        ClipboardWidgetCheck.IsChecked = widgets.ShowClipboard;
+        ClipboardCountSlider.Value = Math.Clamp(widgets.ClipboardMaxItems, 3, 20);
+        MediaWidgetCheck.IsChecked = widgets.ShowMedia;
+    }
+
+    private WidgetSettings ReadWidgets()
+    {
+        _widgets.ShowClock = ClockWidgetCheck.IsChecked == true;
+        _widgets.ClockUse24Hours = Clock24Check.IsChecked == true;
+        _widgets.ClockShowSeconds = ClockSecondsCheck.IsChecked == true;
+        _widgets.ClockShowDate = ClockDateCheck.IsChecked == true;
+        _widgets.ShowNotes = NotesWidgetCheck.IsChecked == true;
+        _widgets.ShowClipboard = ClipboardWidgetCheck.IsChecked == true;
+        _widgets.ClipboardMaxItems = (int)ClipboardCountSlider.Value;
+        _widgets.ShowMedia = MediaWidgetCheck.IsChecked == true;
+        return _widgets;
+    }
+
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        new AboutWindow { Owner = this }.ShowDialog();
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
@@ -641,27 +815,40 @@ public partial class SettingsWindow : Window
         {
             MessageBox.Show(
                 this,
-                "Los colores deben tener formato hexadecimal, por ejemplo #1E1E1E.",
+                Loc.Get("Settings.ColorFormat"),
                 "ClapPanel",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
         }
 
+        var globalShortcut = ReadGlobalShortcut();
+        if (globalShortcut.Enabled && globalShortcut.Modifiers == 0)
+        {
+            MessageBox.Show(this, Loc.Get("Settings.GlobalShortcutNeedsModifier"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         _onSave(new AppSettings
         {
+            FirstRunCompleted = _settingsSource.FirstRunCompleted,
+            GlobalShortcut = globalShortcut,
             MicrophoneId = DeviceCombo.SelectedValue as string,
             Sensitivity = (int)SensitivitySlider.Value,
             StartWithWindows = StartupCheck.IsChecked == true,
             Columns = (int)ColumnsSlider.Value,
             AllowPanelMovement = AllowPanelMovementCheck.IsChecked == true,
+            RememberCategorySelection = RememberCategoryCheck.IsChecked == true,
+            LastSelectedCategory = RememberCategoryCheck.IsChecked == true && !_categorySelectionReset ? _settingsSource.LastSelectedCategory : "",
             PanelLeft = _panelLeft,
             PanelTop = _panelTop,
             Items = _items.Select(item => item.CloneDeep()).ToList(),
             AppearanceProfiles = _profiles.Select(profile => profile.Clone()).ToList(),
             MonitorPositions = _monitorPositions.ToDictionary(pair => pair.Key, pair => pair.Value.Clone(), StringComparer.OrdinalIgnoreCase),
             Detection = _detection,
-            Appearance = ReadAppearance()
+            Appearance = ReadAppearance(),
+            Language = ParseEnum(SelectedTag(LanguageCombo), AppLanguage.System),
+            Widgets = ReadWidgets()
         });
 
         _saved = true;

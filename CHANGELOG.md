@@ -1,6 +1,61 @@
 # Registro de cambios
 
+[English](CHANGELOG.en.md) | [Español](CHANGELOG.md)
+
 Todos los cambios relevantes de ClapPanel se documentan en este archivo.
+
+## [Unreleased]
+
+## [1.5.0] - 2026-11-22
+
+### Añadido
+
+- Monitor del micrófono en tiempo real: nivel máximo y RMS de la señal de entrada sin filtrar, frecuencia de muestreo, cantidad de canales y nivel procesado por el detector.
+- Diagnóstico de captura: informa si el dispositivo está activo, si no llega señal o si Windows impide iniciar la captura; incluye una acción para probar o cambiar temporalmente el micrófono.
+- Atajo de teclado global configurable para abrir o cerrar el panel desde cualquier aplicación. Permite activar/desactivar la función y elegir modificadores (Ctrl, Alt, Shift y Win) y una tecla; el valor predeterminado es Ctrl + Alt + Espacio.
+- Asistente de primera ejecución con pasos de bienvenida, selección y prueba del micrófono, ajuste de sensibilidad y configuración del atajo global e inicio con Windows. Se puede omitir; las instalaciones existentes no vuelven a mostrarlo al actualizar.
+- Personalización del acople inteligente: cantidad máxima de accesos visibles (1–12), prioridad opcional de favoritos y ancho de la zona de activación de borde (4–40 px). Los favoritos se priorizan manteniendo el orden manual dentro de cada grupo.
+- La navegación entre accesos mediante las flechas del teclado reinicia el contador de inactividad: el panel permanece opaco mientras el usuario continúa navegando, aunque el cursor esté fuera.
+
+### Cambiado
+
+- La versión del proyecto pasa a 1.5.0.
+
+## [1.4.3] - 2026-11-22
+
+### Añadido
+
+- Opción para recordar la última categoría seleccionada y restaurarla al volver a abrir el panel.
+- Posibilidad de asignar un mismo acceso directo a varias categorías; aparece al seleccionar cualquiera de ellas.
+- Tiempo configurable (0–5 segundos) antes de aplicar la opacidad reducida cuando el cursor está fuera del panel.
+- Animación opcional de desvanecimiento suave (220 ms) al cambiar entre la opacidad activa e inactiva; se puede desactivar para aplicar el cambio al instante.
+- Reordenamiento ampliado mediante arrastrar y soltar: se pueden insertar accesos antes o después de otros en el panel y ordenar las listas de Ajustes → Iconos y carpetas y el editor de carpetas anidadas. Soltar un acceso directamente sobre una carpeta sigue permitiendo moverlo dentro de ella.
+- Menú de acople inteligente limitado a los primeros seis accesos según el orden de la lista. Se muestran en una columna vertical al acoplar a izquierda o derecha y en una fila horizontal al acoplar arriba o abajo; sin un borde fijo, se utiliza la disposición horizontal.
+
+### Cambiado
+
+- La versión del proyecto pasa a 1.4.3.
+
+## [1.4.0] - 2026-11-22
+
+### Añadido
+
+- Navegación con teclado en el panel: flechas para moverse, Intro para abrir, teclas 1-9 y 0 para elegir uno de los diez primeros iconos, `/` o Ctrl+F para buscar (también al escribir una letra), Inicio y Fin para ir al primer o último icono, Retroceso o Alt+Izquierda para volver de una carpeta y Esc para limpiar la búsqueda o cerrar.
+- Números de atajo en los iconos (opcional) y foco de teclado visible en el panel y en Ajustes.
+- Accesibilidad: nombres para lectores de pantalla (icono, carpeta, favorito, categoría, no disponible y atajo), anuncio de resultados y modo de alto contraste propio. Si Windows tiene un tema de alto contraste activo, ClapPanel lo usa automáticamente.
+- Selector de aplicaciones instaladas al añadir o editar un icono: lista las aplicaciones del menú Inicio y de la Tienda de Microsoft, con buscador.
+- Widgets opcionales en la parte superior del panel: reloj (24 o 12 horas, segundos y fecha), notas rápidas con guardado automático, portapapeles (historial de texto solo en memoria) y control de reproducción (anterior, pausa y siguiente).
+- Interfaz en español e inglés, con selector de idioma en Ajustes → General (sistema, español o English).
+- Ventana «Acerca de» con versión, licencia, créditos de terceros y nota de privacidad, accesible desde la bandeja y desde Ajustes → General.
+- `THIRD-PARTY-NOTICES.md` con los avisos de NAudio y de .NET.
+- Pruebas de idioma (incluida una que comprueba que todas las claves usadas existen), teclado, widgets, aplicaciones instaladas, accesibilidad y Acerca de.
+
+### Cambiado
+
+- Esc cierra el panel en todos los modos (antes solo en pantalla completa); si hay texto en la búsqueda, primero lo limpia.
+- Al abrir el panel, el foco queda en el primer icono para poder usar el teclado de inmediato.
+- Cambiar el idioma cierra el panel si estaba abierto; la próxima apertura ya usa el idioma elegido.
+- La versión del proyecto pasa a 1.4.0.
 
 ## [1.3.1] - 2026-11-22
 
@@ -49,3 +104,8 @@ Esta entrada agrupa todo lo añadido desde la 1.1.0 (versiones 1.2.x y 1.3.x).
 - Selección del micrófono, sensibilidad e inicio opcional con Windows.
 - Instancia única y configuración en JSON dentro del perfil del usuario.
 - Licencia GPL-3.0 o posterior.
+
+[1.5.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.5.0
+[1.4.3]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.4.3
+[1.4.0]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.4.0
+[1.3.1]: https://github.com/Ridol-HK/ClapPanel/releases/tag/v1.3.1

@@ -8,6 +8,8 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
         x:Class="ClapPanel.Views.PanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ClapPanel.Localization"
+        xmlns:local="clr-namespace:ClapPanel.Views"
         Title="ClapPanel"
         SizeToContent="WidthAndHeight"
         MinWidth="150"
@@ -22,6 +24,8 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
         AllowDrop="True"
         DragOver="Panel_DragOver"
         Drop="Panel_Drop"
+        PreviewKeyDown="PanelWindow_PreviewKeyDown"
+        PreviewTextInput="PanelWindow_PreviewTextInput"
         KeyDown="PanelWindow_KeyDown">
     <Window.Resources>
         <Style x:Key="TileButtonStyle" TargetType="Button">
@@ -29,6 +33,7 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
             <Setter Property="BorderBrush" Value="{DynamicResource TileBorderBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -47,6 +52,11 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="TileRoot" Property="Background" Value="{DynamicResource TileHoverBrush}" />
                                 <Setter TargetName="TileRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="TileRoot" Property="Background" Value="{DynamicResource TileHoverBrush}" />
+                                <Setter TargetName="TileRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="TileRoot" Property="BorderThickness" Value="3" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="TileRoot" Property="Opacity" Value="0.8" />
@@ -175,64 +185,72 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                                VerticalAlignment="Center" />
                 </Border>
                 <Button x:Name="SettingsButton"
+                        AutomationProperties.Name="{loc:Tr Panel.Customize}"
                         Grid.Column="1"
                         Content="⋯"
                         HorizontalAlignment="Right"
                         Style="{StaticResource PanelActionButtonStyle}"
-                        ToolTip="Personalizar panel"
+                        ToolTip="{loc:Tr Panel.Customize}"
                         Click="Settings_Click" />
                 <Button x:Name="ClosePanelButton"
+                        AutomationProperties.Name="{loc:Tr Panel.CloseTip}"
                         Grid.Column="2"
                         Content="×"
                         HorizontalAlignment="Right"
                         Style="{StaticResource PanelActionButtonStyle}"
-                        ToolTip="Cerrar menú (Esc)"
+                        ToolTip="{loc:Tr Panel.CloseTip}"
                         Click="ClosePanel_Click" />
             </Grid>
 
             <StackPanel x:Name="ToolbarPanel" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,7">
                 <StackPanel x:Name="ToolbarButtons" Orientation="Horizontal">
                     <Button x:Name="BackButton"
+                        AutomationProperties.Name="{loc:Tr Panel.BackTip}"
                             Content="‹"
                             Width="28"
                             Height="27"
                             Margin="0,0,5,0"
                             Visibility="Collapsed"
-                            ToolTip="Volver a la carpeta anterior"
+                            ToolTip="{loc:Tr Panel.BackTip}"
                             Style="{StaticResource PanelActionButtonStyle}"
                             Click="Back_Click" />
                     <ToggleButton x:Name="FavoritesButton"
+                        AutomationProperties.Name="{loc:Tr Panel.FavoritesTip}"
                                   Content="★"
                                   Width="28"
                                   Height="27"
                                   Padding="0"
                                   Margin="0,0,5,0"
-                                  ToolTip="Mostrar solo favoritos"
+                                  ToolTip="{loc:Tr Panel.FavoritesTip}"
                                   Foreground="{DynamicResource AccentBrush}"
                                   Checked="Favorites_Click"
                                   Unchecked="Favorites_Click" />
                 </StackPanel>
                 <TextBox x:Name="SearchBox"
+                        AutomationProperties.Name="{loc:Tr Panel.SearchTip}"
                          Width="145"
                          MinWidth="80"
                          Height="27"
                          VerticalContentAlignment="Center"
                          Padding="6,2"
                          Margin="0,0,5,0"
-                         ToolTip="Buscar aplicaciones y carpetas"
+                         ToolTip="{loc:Tr Panel.SearchTip}"
                          TextChanged="Search_TextChanged" />
                 <ComboBox x:Name="CategoryCombo"
+                        AutomationProperties.Name="{loc:Tr Panel.CategoryTip}"
                           Width="105"
                           Height="27"
                           VerticalContentAlignment="Center"
-                          ToolTip="Filtrar por categoría"
+                          ToolTip="{loc:Tr Panel.CategoryTip}"
                           SelectionChanged="Category_Changed">
-                    <ComboBoxItem Content="Todas" />
+                    <ComboBoxItem Content="{loc:Tr Panel.AllCategories}" />
                 </ComboBox>
             </StackPanel>
 
             <Grid Grid.Row="2">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                    <local:WidgetsView x:Name="WidgetsHost" />
                     <ItemsControl x:Name="Tiles">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -245,6 +263,9 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                                         Height="{Binding TileSize, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                         Margin="4"
                                         Style="{StaticResource TileButtonStyle}"
+                                        BorderThickness="{Binding TileBorderThickness, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                        AutomationProperties.Name="{Binding AutomationName}"
+                                        AutomationProperties.HelpText="{Binding ToolTipText}"
                                         AllowDrop="True"
                                         ToolTip="{Binding ToolTipText}"
                                         Click="Tile_Click"
@@ -265,6 +286,13 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                                                        TextAlignment="Center"
                                                        TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
+                                        <TextBlock Text="{Binding ShortcutBadge}"
+                                                   Foreground="{DynamicResource MutedTextBrush}"
+                                                   FontSize="10"
+                                                   FontWeight="SemiBold"
+                                                   HorizontalAlignment="Left"
+                                                   VerticalAlignment="Top"
+                                                   Margin="5,3,0,0" />
                                         <TextBlock Text="★"
                                                    Foreground="{DynamicResource AccentBrush}"
                                                    FontSize="12"
@@ -304,9 +332,10 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    </StackPanel>
                 </ScrollViewer>
                 <TextBlock x:Name="EmptyText"
-                           Text="Sin iconos. Añádelos desde Ajustes o arrastra elementos aquí."
+                           Text="{loc:Tr Panel.Empty}"
                            Foreground="{DynamicResource MutedTextBrush}"
                            TextWrapping="Wrap"
                            Margin="12"
@@ -319,28 +348,28 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
 
     <!-- Invisible resize handles: the cursor changes when the user approaches an edge or corner. -->
     <Thumb x:Name="LeftResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Left" Width="8" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="0,14"
-           Background="Transparent" Cursor="SizeWE" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeWE" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="RightResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Right" Width="8" HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,14"
-           Background="Transparent" Cursor="SizeWE" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeWE" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="TopResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Top" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="14,0"
-           Background="Transparent" Cursor="SizeNS" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeNS" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="BottomResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="Bottom" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="14,0"
-           Background="Transparent" Cursor="SizeNS" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeNS" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="TopLeftResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="TopLeft" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Top"
-           Background="Transparent" Cursor="SizeNWSE" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeNWSE" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="TopRightResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="TopRight" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Top"
-           Background="Transparent" Cursor="SizeNESW" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeNESW" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="BottomLeftResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="BottomLeft" Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-           Background="Transparent" Cursor="SizeNESW" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeNESW" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     <Thumb x:Name="BottomRightResizeThumb" Style="{StaticResource ResizeThumbStyle}" Tag="BottomRight" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-           Background="Transparent" Cursor="SizeNWSE" ToolTip="Arrastrar para cambiar el tamaño"
+           Background="Transparent" Cursor="SizeNWSE" ToolTip="{loc:Tr Panel.ResizeTip}"
            DragDelta="Resize_DragDelta" DragCompleted="Resize_DragCompleted" />
     </Grid>
 </Window>

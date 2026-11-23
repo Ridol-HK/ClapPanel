@@ -8,12 +8,13 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
         x:Class="ClapPanel.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ClapPanel.Localization"
         xmlns:local="clr-namespace:ClapPanel.Views"
-        Title="Ajustes"
+        Title="{loc:Tr Settings.Title}"
         Width="560"
-        Height="760"
+        Height="800"
         MinWidth="500"
-        MinHeight="540"
+        MinHeight="580"
         WindowStartupLocation="CenterScreen">
     <DockPanel>
         <Border DockPanel.Dock="Bottom"
@@ -24,200 +25,349 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
                 Margin="12,10,12,12"
                 Padding="12,8">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Cancelar" IsCancel="True" Padding="20,6" Margin="0,0,8,0" Click="Cancel_Click" />
-                <Button Content="Guardar" Style="{StaticResource AccentButtonStyle}" Padding="20,6" Click="Save_Click" />
+                <Button Content="{loc:Tr Common.Cancel}" IsCancel="True" Padding="20,6" Margin="0,0,8,0" Click="Cancel_Click" />
+                <Button Content="{loc:Tr Common.Save}" Style="{StaticResource AccentButtonStyle}" Padding="20,6" Click="Save_Click" />
             </StackPanel>
         </Border>
 
         <TabControl x:Name="SettingsTabs" Margin="12,12,12,0">
-            <TabItem Header="General">
+            <TabItem Header="{loc:Tr Settings.TabGeneral}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16">
-                        <TextBlock Text="Comportamiento del panel" FontWeight="SemiBold" Margin="0,0,0,10" />
-                        <CheckBox x:Name="StartupCheck" Content="Iniciar con Windows" Margin="0,0,0,10" />
-                        <CheckBox x:Name="AllowPanelMovementCheck" IsChecked="True" Margin="0,0,0,16">
-                            <TextBlock Text="Permitir mover libremente el panel arrastrando su barra superior" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Tr Settings.PanelBehavior}" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <CheckBox x:Name="StartupCheck" Content="{loc:Tr Settings.StartWithWindows}" Margin="0,0,0,10" />
+                        <CheckBox x:Name="AllowPanelMovementCheck" IsChecked="True" Margin="0,0,0,10">
+                            <TextBlock Text="{loc:Tr Settings.AllowMove}" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <CheckBox x:Name="RememberCategoryCheck" Margin="0,0,0,16">
+                            <TextBlock Text="{loc:Tr Settings.RememberCategory}" TextWrapping="Wrap" />
                         </CheckBox>
 
+                        <TextBlock Text="{loc:Tr Settings.Language}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ComboBox x:Name="LanguageCombo"
+                                  SelectedValuePath="Tag"
+                                  Margin="0,0,0,6"
+                                  AutomationProperties.Name="{loc:Tr Settings.Language}">
+                            <ComboBoxItem Content="{loc:Tr Lang.System}" Tag="System" />
+                            <ComboBoxItem Content="{loc:Tr Lang.Spanish}" Tag="Spanish" />
+                            <ComboBoxItem Content="{loc:Tr Lang.English}" Tag="English" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Tr Settings.LanguageHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,16" />
+
+                        <TextBlock Text="{loc:Tr Settings.Accessibility}" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <CheckBox x:Name="HighContrastCheck" Content="{loc:Tr Settings.HighContrast}" Margin="0,0,0,4" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="{loc:Tr Settings.HighContrastHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="22,0,0,10" />
+                        <CheckBox x:Name="ShortcutNumbersCheck" Content="{loc:Tr Settings.ShortcutNumbers}" Margin="0,0,0,4" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="{loc:Tr Settings.KeyboardHelp}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="22,0,0,16" />
+
+                        <TextBlock Text="{loc:Tr Settings.GlobalShortcut}" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <CheckBox x:Name="HotkeyEnabledCheck" Content="{loc:Tr Settings.GlobalShortcutEnabled}" Margin="0,0,0,8" />
+                        <TextBlock Text="{loc:Tr Settings.GlobalShortcutModifiers}" />
+                        <WrapPanel Margin="0,6,0,10">
+                            <CheckBox x:Name="HotkeyCtrlCheck" Content="Ctrl" Margin="0,0,16,0" />
+                            <CheckBox x:Name="HotkeyAltCheck" Content="Alt" Margin="0,0,16,0" />
+                            <CheckBox x:Name="HotkeyShiftCheck" Content="Shift" Margin="0,0,16,0" />
+                            <CheckBox x:Name="HotkeyWinCheck" Content="Win" />
+                        </WrapPanel>
+                        <TextBlock Text="{loc:Tr Settings.GlobalShortcutKey}" />
+                        <ComboBox x:Name="HotkeyKeyCombo" SelectedValuePath="Tag" Margin="0,6,0,8" AutomationProperties.Name="{loc:Tr Settings.GlobalShortcutKey}">
+                            <ComboBoxItem Content="Espacio / Space" Tag="32" />
+                            <ComboBoxItem Content="A" Tag="65" />
+                            <ComboBoxItem Content="B" Tag="66" />
+                            <ComboBoxItem Content="C" Tag="67" />
+                            <ComboBoxItem Content="D" Tag="68" />
+                            <ComboBoxItem Content="E" Tag="69" />
+                            <ComboBoxItem Content="F" Tag="70" />
+                            <ComboBoxItem Content="G" Tag="71" />
+                            <ComboBoxItem Content="H" Tag="72" />
+                            <ComboBoxItem Content="I" Tag="73" />
+                            <ComboBoxItem Content="J" Tag="74" />
+                            <ComboBoxItem Content="K" Tag="75" />
+                            <ComboBoxItem Content="L" Tag="76" />
+                            <ComboBoxItem Content="M" Tag="77" />
+                            <ComboBoxItem Content="N" Tag="78" />
+                            <ComboBoxItem Content="O" Tag="79" />
+                            <ComboBoxItem Content="P" Tag="80" />
+                            <ComboBoxItem Content="Q" Tag="81" />
+                            <ComboBoxItem Content="R" Tag="82" />
+                            <ComboBoxItem Content="S" Tag="83" />
+                            <ComboBoxItem Content="T" Tag="84" />
+                            <ComboBoxItem Content="U" Tag="85" />
+                            <ComboBoxItem Content="V" Tag="86" />
+                            <ComboBoxItem Content="W" Tag="87" />
+                            <ComboBoxItem Content="X" Tag="88" />
+                            <ComboBoxItem Content="Y" Tag="89" />
+                            <ComboBoxItem Content="Z" Tag="90" />
+                            <ComboBoxItem Content="0" Tag="48" />
+                            <ComboBoxItem Content="1" Tag="49" />
+                            <ComboBoxItem Content="2" Tag="50" />
+                            <ComboBoxItem Content="3" Tag="51" />
+                            <ComboBoxItem Content="4" Tag="52" />
+                            <ComboBoxItem Content="5" Tag="53" />
+                            <ComboBoxItem Content="6" Tag="54" />
+                            <ComboBoxItem Content="7" Tag="55" />
+                            <ComboBoxItem Content="8" Tag="56" />
+                            <ComboBoxItem Content="9" Tag="57" />
+                            <ComboBoxItem Content="Insert" Tag="45" />
+                            <ComboBoxItem Content="Inicio / Home" Tag="36" />
+                            <ComboBoxItem Content="Fin / End" Tag="35" />
+                            <ComboBoxItem Content="Re Pág / Page Up" Tag="33" />
+                            <ComboBoxItem Content="Av Pág / Page Down" Tag="34" />
+                            <ComboBoxItem Content="F1" Tag="112" /><ComboBoxItem Content="F2" Tag="113" />
+                            <ComboBoxItem Content="F3" Tag="114" /><ComboBoxItem Content="F4" Tag="115" />
+                            <ComboBoxItem Content="F5" Tag="116" /><ComboBoxItem Content="F6" Tag="117" />
+                            <ComboBoxItem Content="F7" Tag="118" /><ComboBoxItem Content="F8" Tag="119" />
+                            <ComboBoxItem Content="F9" Tag="120" /><ComboBoxItem Content="F10" Tag="121" />
+                            <ComboBoxItem Content="F11" Tag="122" /><ComboBoxItem Content="F12" Tag="123" />
+                        </ComboBox>
+                        <TextBlock Text="{loc:Tr Settings.GlobalShortcutHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,16" />
+
                         <Separator Margin="0,0,0,14" />
-                        <TextBlock Text="Acciones" FontWeight="SemiBold" Margin="0,0,0,10" />
-                        <Button Content="Detener captura del micrófono" HorizontalAlignment="Left" Padding="12,6" Click="StopMicrophone_Click" />
+                        <TextBlock Text="{loc:Tr Settings.Actions}" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <Button Content="{loc:Tr Settings.StopMic}" HorizontalAlignment="Left" Padding="12,6" Click="StopMicrophone_Click" />
                         <TextBlock x:Name="MicrophoneStatusText"
-                                   Text="La captura del micrófono está controlada desde el icono de ClapPanel en la bandeja del sistema."
+                                   Text="{loc:Tr Settings.MicStatusDefault}"
                                    TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,6,0,14" />
-                        <Button Content="Restablecer todos los valores predeterminados" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,10" Click="ResetDefaults_Click" />
-                        <Button Content="Cerrar ClapPanel" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Click="ExitApplication_Click" />
+                        <Button Content="{loc:Tr Settings.About}" HorizontalAlignment="Left" Padding="14,6" Margin="0,0,0,8" Click="About_Click" />
+                        <Button Content="{loc:Tr Settings.ResetDefaults}" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,10" Click="ResetDefaults_Click" />
+                        <Button Content="{loc:Tr Settings.ExitApp}" Style="{StaticResource DangerButtonStyle}" HorizontalAlignment="Left" Padding="12,6" Click="ExitApplication_Click" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Micrófono">
+            <TabItem Header="{loc:Tr Settings.TabMicrophone}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16">
-                        <TextBlock Text="Micrófono" />
-                        <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id" Margin="0,6,0,16" />
+                        <TextBlock Text="{loc:Tr Settings.TabMicrophone}" />
+                        <ComboBox x:Name="DeviceCombo" AutomationProperties.Name="{loc:Tr Settings.TabMicrophone}" DisplayMemberPath="Name" SelectedValuePath="Id" Margin="0,6,0,16" />
 
-                        <TextBlock Text="Sensibilidad" />
-                        <Slider x:Name="SensitivitySlider" Minimum="0" Maximum="100" Margin="0,6,0,16" />
+                        <TextBlock Text="{loc:Tr Settings.Sensitivity}" />
+                        <Slider x:Name="SensitivitySlider" AutomationProperties.Name="{loc:Tr Settings.Sensitivity}" Minimum="0" Maximum="100" Margin="0,6,0,16" />
 
-                        <TextBlock Text="Nivel de entrada (la marca roja es el umbral de detección)" TextWrapping="Wrap" />
+                        <Button Content="{loc:Tr Setup.TestMic}" HorizontalAlignment="Left" Padding="14,6" Margin="0,0,0,8" Click="TestMicrophone_Click" />
+                        <TextBlock x:Name="MicDeviceStatusText" Text="{loc:Tr Settings.MicStatusDefault}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,10" />
+
+                        <TextBlock Text="{loc:Tr Settings.RawPeakLevel}" TextWrapping="Wrap" />
+                        <ProgressBar x:Name="RawPeakBar" AutomationProperties.Name="{loc:Tr Settings.RawPeakLevel}" Minimum="0" Maximum="1" Height="12" Margin="0,6,0,10" />
+                        <TextBlock Text="{loc:Tr Settings.RawAverageLevel}" TextWrapping="Wrap" />
+                        <ProgressBar x:Name="RawRmsBar" AutomationProperties.Name="{loc:Tr Settings.RawAverageLevel}" Minimum="0" Maximum="1" Height="12" Margin="0,6,0,4" />
+                        <TextBlock x:Name="MicMeasurementText" Text="—" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,14" />
+
+                        <TextBlock Text="{loc:Tr Settings.InputLevel}" TextWrapping="Wrap" />
                         <Grid Margin="0,6,0,16">
-                            <ProgressBar x:Name="LevelBar" Minimum="0" Maximum="1" Height="12" />
+                            <ProgressBar x:Name="LevelBar" AutomationProperties.Name="{loc:Tr Settings.InputLevel}" Minimum="0" Maximum="1" Height="12" />
                             <Rectangle Width="2" Height="12" Fill="Red" HorizontalAlignment="Center" />
                         </Grid>
 
-                        <Button x:Name="CalibrateButton" Content="Calibrar…" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" Padding="16,6" Click="Calibrate_Click" />
+                        <Button x:Name="CalibrateButton" Content="{loc:Tr Settings.Calibrate}" Style="{StaticResource AccentButtonStyle}" HorizontalAlignment="Left" Padding="16,6" Click="Calibrate_Click" />
                         <TextBlock x:Name="CalibrationText" TextWrapping="Wrap" Margin="0,8,0,0" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem x:Name="AppearanceTab" Header="Apariencia">
+            <TabItem x:Name="AppearanceTab" Header="{loc:Tr Settings.TabAppearance}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16">
                         <local:PanelPreview x:Name="Preview" Margin="0,0,0,16" />
-                        <TextBlock Text="Los cambios se reflejan en el panel mientras editas. Guardar los conserva; Cancelar los revierte."
+                        <TextBlock Text="{loc:Tr Settings.AppearanceHint}"
                                    TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,14" />
 
-                        <TextBlock Text="Perfiles visuales" FontWeight="SemiBold" />
+                        <TextBlock Text="{loc:Tr Settings.Profiles}" FontWeight="SemiBold" />
                         <Grid Margin="0,6,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <ComboBox x:Name="ProfileCombo" DisplayMemberPath="Name" Margin="0,0,0,6" />
-                                <TextBox x:Name="ProfileNameBox" ToolTip="Nombre del nuevo perfil" />
+                                <ComboBox x:Name="ProfileCombo" AutomationProperties.Name="{loc:Tr Settings.Profiles}" DisplayMemberPath="Name" Margin="0,0,0,6" />
+                                <TextBox x:Name="ProfileNameBox" AutomationProperties.Name="{loc:Tr Settings.ProfileNameTip}" ToolTip="{loc:Tr Settings.ProfileNameTip}" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                <Button Content="Aplicar" Style="{StaticResource AccentButtonStyle}" Width="86" Margin="0,0,0,4" Click="ApplyProfile_Click" />
-                                <Button Content="Guardar perfil" Style="{StaticResource AccentButtonStyle}" Width="86" Margin="0,0,0,4" Click="SaveProfile_Click" />
-                                <Button Content="Eliminar" Style="{StaticResource DangerButtonStyle}" Width="86" Click="DeleteProfile_Click" />
+                                <Button Content="{loc:Tr Common.Apply}" Style="{StaticResource AccentButtonStyle}" Width="86" Margin="0,0,0,4" Click="ApplyProfile_Click" />
+                                <Button Content="{loc:Tr Settings.SaveProfile}" Style="{StaticResource AccentButtonStyle}" Width="86" Margin="0,0,0,4" Click="SaveProfile_Click" />
+                                <Button Content="{loc:Tr Common.Remove}" Style="{StaticResource DangerButtonStyle}" Width="86" Click="DeleteProfile_Click" />
                             </StackPanel>
                         </Grid>
 
-                        <TextBlock Text="Tema" />
-                        <ComboBox x:Name="ThemeCombo" SelectedValuePath="Tag" Margin="0,6,0,16" SelectionChanged="Appearance_Changed">
-                            <ComboBoxItem Content="Sistema" Tag="System" />
-                            <ComboBoxItem Content="Claro" Tag="Light" />
-                            <ComboBoxItem Content="Oscuro" Tag="Dark" />
+                        <TextBlock Text="{loc:Tr Settings.Theme}" />
+                        <ComboBox x:Name="ThemeCombo" AutomationProperties.Name="{loc:Tr Settings.Theme}" SelectedValuePath="Tag" Margin="0,6,0,16" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="{loc:Tr Settings.ThemeSystem}" Tag="System" />
+                            <ComboBoxItem Content="{loc:Tr Settings.ThemeLight}" Tag="Light" />
+                            <ComboBoxItem Content="{loc:Tr Settings.ThemeDark}" Tag="Dark" />
                         </ComboBox>
 
-                        <TextBlock Text="Color de fondo (hexadecimal; vacío = según el tema)" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Tr Settings.BackgroundColor}" TextWrapping="Wrap" />
                         <DockPanel Margin="0,6,0,6">
-                            <Button DockPanel.Dock="Right" Content="Auto" Padding="10,2" Margin="8,0,0,0" Click="ClearBackground_Click" />
-                            <TextBox x:Name="BackgroundBox" TextChanged="Appearance_Changed" />
+                            <Button DockPanel.Dock="Right" Content="{loc:Tr Common.Auto}" Padding="10,2" Margin="8,0,0,0" Click="ClearBackground_Click" />
+                            <TextBox x:Name="BackgroundBox" AutomationProperties.Name="{loc:Tr Settings.BackgroundColor}" TextChanged="Appearance_Changed" />
                         </DockPanel>
                         <WrapPanel x:Name="BackgroundSwatches" Margin="0,0,0,10" />
 
-                        <TextBlock Text="Color de acento (hexadecimal; vacío = azul por defecto)" TextWrapping="Wrap" />
+                        <TextBlock Text="{loc:Tr Settings.AccentColor}" TextWrapping="Wrap" />
                         <DockPanel Margin="0,6,0,6">
-                            <Button DockPanel.Dock="Right" Content="Auto" Padding="10,2" Margin="8,0,0,0" Click="ClearAccent_Click" />
-                            <TextBox x:Name="AccentBox" TextChanged="Appearance_Changed" />
+                            <Button DockPanel.Dock="Right" Content="{loc:Tr Common.Auto}" Padding="10,2" Margin="8,0,0,0" Click="ClearAccent_Click" />
+                            <TextBox x:Name="AccentBox" AutomationProperties.Name="{loc:Tr Settings.AccentColor}" TextChanged="Appearance_Changed" />
                         </DockPanel>
                         <WrapPanel x:Name="AccentSwatches" Margin="0,0,0,10" />
 
-                        <TextBlock Text="Opacidad del panel" />
+                        <TextBlock Text="{loc:Tr Settings.Opacity}" />
                         <DockPanel Margin="0,6,0,16">
                             <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=OpacitySlider, StringFormat='{}{0:0} %'}" />
-                            <Slider x:Name="OpacitySlider" Minimum="40" Maximum="100" ValueChanged="Appearance_Changed" />
+                            <Slider x:Name="OpacitySlider" AutomationProperties.Name="{loc:Tr Settings.Opacity}" Minimum="40" Maximum="100" ValueChanged="Appearance_Changed" />
                         </DockPanel>
 
-                        <CheckBox x:Name="DynamicTransparencyCheck" Content="Reducir opacidad cuando el ratón no está sobre el panel" Margin="0,0,0,6"
+                        <CheckBox x:Name="DynamicTransparencyCheck" Content="{loc:Tr Settings.DynamicOpacity}" Margin="0,0,0,6"
                                   Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
-                        <TextBlock Text="Opacidad inactiva" />
-                        <DockPanel Margin="0,6,0,16">
+                        <TextBlock Text="{loc:Tr Settings.InactiveOpacity}" />
+                        <DockPanel Margin="0,6,0,12">
                             <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=InactiveOpacitySlider, StringFormat='{}{0:0} %'}" />
-                            <Slider x:Name="InactiveOpacitySlider" Minimum="20" Maximum="100" ValueChanged="Appearance_Changed" />
+                            <Slider x:Name="InactiveOpacitySlider" AutomationProperties.Name="{loc:Tr Settings.InactiveOpacity}" Minimum="20" Maximum="100" ValueChanged="Appearance_Changed" />
                         </DockPanel>
+                        <TextBlock Text="{loc:Tr Settings.InactiveOpacityDelay}" />
+                        <DockPanel Margin="0,6,0,10">
+                            <TextBlock DockPanel.Dock="Right" Width="58" TextAlignment="Right" Text="{Binding Value, ElementName=InactiveOpacityDelaySlider, StringFormat='{}{0:0.00} s'}" />
+                            <Slider x:Name="InactiveOpacityDelaySlider" AutomationProperties.Name="{loc:Tr Settings.InactiveOpacityDelay}" Minimum="0" Maximum="5" TickFrequency="0.25" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+                        <CheckBox x:Name="AnimateInactiveOpacityCheck" Content="{loc:Tr Settings.AnimateInactiveOpacity}" Margin="0,0,0,4"
+                                  Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="{loc:Tr Settings.AnimateInactiveOpacityHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="22,0,0,16" />
 
-                        <TextBlock Text="Tamaño de los iconos" />
+                        <TextBlock Text="{loc:Tr Settings.IconSize}" />
                         <DockPanel Margin="0,6,0,16">
                             <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=IconSizeSlider, StringFormat='{}{0:0} px'}" />
-                            <Slider x:Name="IconSizeSlider" Minimum="24" Maximum="96" TickFrequency="4" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                            <Slider x:Name="IconSizeSlider" AutomationProperties.Name="{loc:Tr Settings.IconSize}" Minimum="24" Maximum="96" TickFrequency="4" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
                         </DockPanel>
 
-                        <CheckBox x:Name="ShowNamesCheck" Content="Mostrar nombres bajo los iconos" Margin="0,0,0,8" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
-                        <CheckBox x:Name="RoundedCheck" Content="Esquinas redondeadas" Margin="0,0,0,8" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <CheckBox x:Name="ShowNamesCheck" Content="{loc:Tr Settings.ShowNames}" Margin="0,0,0,8" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <CheckBox x:Name="RoundedCheck" Content="{loc:Tr Settings.Rounded}" Margin="0,0,0,8" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
 
-                        <TextBlock Text="Animación de aparición y cierre" />
-                        <ComboBox x:Name="AnimationStyleCombo" SelectedValuePath="Tag" Margin="0,6,0,16" SelectionChanged="Appearance_Changed">
-                            <ComboBoxItem Content="Ninguna" Tag="None" />
-                            <ComboBoxItem Content="Desvanecer" Tag="Fade" />
-                            <ComboBoxItem Content="Escala" Tag="Scale" />
-                            <ComboBoxItem Content="Deslizar desde el borde" Tag="Slide" />
-                            <ComboBoxItem Content="Aparecer desde arriba" Tag="Drop" />
-                            <ComboBoxItem Content="Zoom con rebote suave" Tag="Pop" />
-                            <ComboBoxItem Content="Rebote ligero" Tag="Bounce" />
+                        <TextBlock Text="{loc:Tr Settings.Animation}" />
+                        <ComboBox x:Name="AnimationStyleCombo" AutomationProperties.Name="{loc:Tr Settings.Animation}" SelectedValuePath="Tag" Margin="0,6,0,16" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="{loc:Tr Anim.None}" Tag="None" />
+                            <ComboBoxItem Content="{loc:Tr Anim.Fade}" Tag="Fade" />
+                            <ComboBoxItem Content="{loc:Tr Anim.Scale}" Tag="Scale" />
+                            <ComboBoxItem Content="{loc:Tr Anim.Slide}" Tag="Slide" />
+                            <ComboBoxItem Content="{loc:Tr Anim.Drop}" Tag="Drop" />
+                            <ComboBoxItem Content="{loc:Tr Anim.Pop}" Tag="Pop" />
+                            <ComboBoxItem Content="{loc:Tr Anim.Bounce}" Tag="Bounce" />
                         </ComboBox>
 
                         <Separator Margin="0,0,0,14" />
-                        <TextBlock Text="Posición y monitores" FontWeight="SemiBold" />
-                        <TextBlock Text="Monitor" Margin="0,8,0,0" />
-                        <ComboBox x:Name="MonitorCombo" DisplayMemberPath="DisplayName" SelectedValuePath="DeviceName" Margin="0,6,0,12" SelectionChanged="Appearance_Changed" />
+                        <TextBlock Text="{loc:Tr Settings.PositionAndMonitors}" FontWeight="SemiBold" />
+                        <TextBlock Text="{loc:Tr Settings.Monitor}" Margin="0,8,0,0" />
+                        <ComboBox x:Name="MonitorCombo" AutomationProperties.Name="{loc:Tr Settings.Monitor}" DisplayMemberPath="DisplayName" SelectedValuePath="DeviceName" Margin="0,6,0,12" SelectionChanged="Appearance_Changed" />
 
-                        <CheckBox x:Name="FullScreenCheck" Content="Mostrar el menú en pantalla completa" Margin="0,2,0,4"
+                        <CheckBox x:Name="FullScreenCheck" Content="{loc:Tr Settings.FullScreen}" Margin="0,2,0,4"
                                   Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
-                        <TextBlock Text="El menú ocupará toda la pantalla del monitor seleccionado. Pulsa Esc para cerrarlo."
+                        <TextBlock Text="{loc:Tr Settings.FullScreenHint}"
                                    Foreground="{DynamicResource MutedTextBrush}" TextWrapping="Wrap" Margin="22,0,0,12" />
 
-                        <TextBlock Text="Posición inicial" />
-                        <ComboBox x:Name="PositionCombo" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
-                            <ComboBoxItem Content="Esquina inferior derecha" Tag="BottomRight" />
-                            <ComboBoxItem Content="Esquina inferior izquierda" Tag="BottomLeft" />
-                            <ComboBoxItem Content="Esquina superior derecha" Tag="TopRight" />
-                            <ComboBoxItem Content="Esquina superior izquierda" Tag="TopLeft" />
-                            <ComboBoxItem Content="Centro" Tag="Center" />
+                        <TextBlock Text="{loc:Tr Settings.InitialPosition}" />
+                        <ComboBox x:Name="PositionCombo" AutomationProperties.Name="{loc:Tr Settings.InitialPosition}" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="{loc:Tr Pos.BottomRight}" Tag="BottomRight" />
+                            <ComboBoxItem Content="{loc:Tr Pos.BottomLeft}" Tag="BottomLeft" />
+                            <ComboBoxItem Content="{loc:Tr Pos.TopRight}" Tag="TopRight" />
+                            <ComboBoxItem Content="{loc:Tr Pos.TopLeft}" Tag="TopLeft" />
+                            <ComboBoxItem Content="{loc:Tr Pos.Center}" Tag="Center" />
                         </ComboBox>
 
-                        <TextBlock Text="Acoplar al borde" />
-                        <ComboBox x:Name="DockEdgeCombo" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
-                            <ComboBoxItem Content="Sin acoplar" Tag="None" />
-                            <ComboBoxItem Content="Borde izquierdo" Tag="Left" />
-                            <ComboBoxItem Content="Borde derecho" Tag="Right" />
-                            <ComboBoxItem Content="Borde superior" Tag="Top" />
-                            <ComboBoxItem Content="Borde inferior" Tag="Bottom" />
+                        <TextBlock Text="{loc:Tr Settings.Dock}" />
+                        <ComboBox x:Name="DockEdgeCombo" AutomationProperties.Name="{loc:Tr Settings.Dock}" SelectedValuePath="Tag" Margin="0,6,0,12" SelectionChanged="Appearance_Changed">
+                            <ComboBoxItem Content="{loc:Tr Dock.None}" Tag="None" />
+                            <ComboBoxItem Content="{loc:Tr Dock.Left}" Tag="Left" />
+                            <ComboBoxItem Content="{loc:Tr Dock.Right}" Tag="Right" />
+                            <ComboBoxItem Content="{loc:Tr Dock.Top}" Tag="Top" />
+                            <ComboBoxItem Content="{loc:Tr Dock.Bottom}" Tag="Bottom" />
                         </ComboBox>
 
-                        <CheckBox x:Name="AutoHideCheck" Content="Ocultar automáticamente cuando no se utiliza" Margin="0,4,0,8"
+                        <CheckBox x:Name="AutoHideCheck" Content="{loc:Tr Settings.AutoHide}" Margin="0,4,0,8"
                                   Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
-                        <TextBlock Text="Tiempo de inactividad antes de ocultar" />
-                        <DockPanel Margin="0,6,0,16">
+                        <TextBlock Text="{loc:Tr Settings.AutoHideDelay}" />
+                        <TextBlock Text="{loc:Tr Settings.AutoHideHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="22,0,0,8" />
+                        <DockPanel Margin="0,6,0,12">
                             <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=AutoHideDelaySlider, StringFormat='{}{0:0} s'}" />
-                            <Slider x:Name="AutoHideDelaySlider" Minimum="1" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                            <Slider x:Name="AutoHideDelaySlider" AutomationProperties.Name="{loc:Tr Settings.AutoHideDelay}" Minimum="1" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+
+                        <Separator Margin="0,2,0,12" />
+                        <TextBlock Text="{loc:Tr Settings.SmartDockOptions}" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <TextBlock Text="{loc:Tr Settings.SmartDockVisibleItems}" />
+                        <DockPanel Margin="0,6,0,12">
+                            <TextBlock DockPanel.Dock="Right" Width="36" TextAlignment="Right" Text="{Binding Value, ElementName=SmartDockVisibleItemsSlider, StringFormat='{}{0:0}'}" />
+                            <Slider x:Name="SmartDockVisibleItemsSlider" AutomationProperties.Name="{loc:Tr Settings.SmartDockVisibleItems}" Minimum="1" Maximum="12" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                        </DockPanel>
+                        <CheckBox x:Name="SmartDockPrioritizeFavoritesCheck" Content="{loc:Tr Settings.SmartDockPrioritizeFavorites}" Margin="0,0,0,12" Checked="Appearance_Changed" Unchecked="Appearance_Changed" />
+                        <TextBlock Text="{loc:Tr Settings.SmartDockRevealThreshold}" />
+                        <DockPanel Margin="0,6,0,16">
+                            <TextBlock DockPanel.Dock="Right" Width="48" TextAlignment="Right" Text="{Binding Value, ElementName=SmartDockRevealThresholdSlider, StringFormat='{}{0:0} px'}" />
+                            <Slider x:Name="SmartDockRevealThresholdSlider" AutomationProperties.Name="{loc:Tr Settings.SmartDockRevealThreshold}" Minimum="4" Maximum="40" TickFrequency="2" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
                         </DockPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Iconos y carpetas">
+            <TabItem Header="{loc:Tr Settings.TabIcons}">
                 <DockPanel Margin="16">
                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
-                        <TextBlock Text="Columnas del panel" />
+                        <TextBlock Text="{loc:Tr Settings.Columns}" />
                         <DockPanel Margin="0,6,0,14">
                             <TextBlock DockPanel.Dock="Right" Width="24" TextAlignment="Right" Text="{Binding Value, ElementName=ColumnsSlider}" />
-                            <Slider x:Name="ColumnsSlider" Minimum="1" Maximum="10" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
+                            <Slider x:Name="ColumnsSlider" AutomationProperties.Name="{loc:Tr Settings.Columns}" Minimum="1" Maximum="10" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Appearance_Changed" />
                         </DockPanel>
-                        <TextBlock Text="Aplicaciones, categorías y carpetas" FontWeight="SemiBold" />
-                        <TextBlock Text="Asigna una categoría y marca favoritos al editar cada acceso directo. Las carpetas se abren desde el panel." TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" />
+                        <TextBlock Text="{loc:Tr Settings.AppsCategoriesFolders}" FontWeight="SemiBold" />
+                        <TextBlock Text="{loc:Tr Settings.IconsHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,4,0,0" />
                     </StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <ListBox x:Name="ItemsList" Grid.Column="0" DisplayMemberPath="DisplayLabel" MouseDoubleClick="Edit_Click" />
+                        <ListBox x:Name="ItemsList" AutomationProperties.Name="{loc:Tr Settings.AppsCategoriesFolders}" AutomationProperties.HelpText="{loc:Tr Settings.DragSortTip}" ToolTip="{loc:Tr Settings.DragSortTip}" Grid.Column="0" DisplayMemberPath="DisplayLabel" MouseDoubleClick="Edit_Click" />
                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <Button Content="Añadir aplicación" Style="{StaticResource AccentButtonStyle}" Width="112" Margin="0,0,0,4" Click="Add_Click" />
-                            <Button Content="Añadir carpeta" Style="{StaticResource AccentButtonStyle}" Width="112" Margin="0,0,0,4" Click="AddFolder_Click" />
-                            <Button Content="Editar" Width="112" Margin="0,0,0,4" Click="Edit_Click" />
-                            <Button Content="Editar contenido" Width="112" Margin="0,0,0,4" Click="EditFolder_Click" />
-                            <Button Content="Eliminar" Style="{StaticResource DangerButtonStyle}" Width="112" Margin="0,0,0,4" Click="Remove_Click" />
-                            <Button Content="Subir" Width="112" Margin="0,0,0,4" Click="MoveUp_Click" />
-                            <Button Content="Bajar" Width="112" Click="MoveDown_Click" />
+                            <Button Content="{loc:Tr Settings.AddApp}" Style="{StaticResource AccentButtonStyle}" Width="112" Margin="0,0,0,4" Click="Add_Click" />
+                            <Button Content="{loc:Tr Settings.AddFolder}" Style="{StaticResource AccentButtonStyle}" Width="112" Margin="0,0,0,4" Click="AddFolder_Click" />
+                            <Button Content="{loc:Tr Common.Edit}" Width="112" Margin="0,0,0,4" Click="Edit_Click" />
+                            <Button Content="{loc:Tr Settings.EditContents}" Width="112" Margin="0,0,0,4" Click="EditFolder_Click" />
+                            <Button Content="{loc:Tr Common.Remove}" Style="{StaticResource DangerButtonStyle}" Width="112" Margin="0,0,0,4" Click="Remove_Click" />
+                            <Button Content="{loc:Tr Common.MoveUp}" Width="112" Margin="0,0,0,4" Click="MoveUp_Click" />
+                            <Button Content="{loc:Tr Common.MoveDown}" Width="112" Click="MoveDown_Click" />
                         </StackPanel>
                     </Grid>
                 </DockPanel>
+            </TabItem>
+
+            <TabItem Header="{loc:Tr Settings.TabWidgets}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16">
+                        <TextBlock Text="{loc:Tr Widgets.Intro}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,14" />
+
+                        <CheckBox x:Name="ClockWidgetCheck" Content="{loc:Tr Widgets.Clock}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Margin="24,0,0,14">
+                            <CheckBox x:Name="Clock24Check" Content="{loc:Tr Widgets.Clock24}" Margin="0,0,0,6" />
+                            <CheckBox x:Name="ClockSecondsCheck" Content="{loc:Tr Widgets.ClockSeconds}" Margin="0,0,0,6" />
+                            <CheckBox x:Name="ClockDateCheck" Content="{loc:Tr Widgets.ClockDate}" />
+                        </StackPanel>
+
+                        <CheckBox x:Name="NotesWidgetCheck" Content="{loc:Tr Widgets.Notes}" FontWeight="SemiBold" Margin="0,0,0,14" />
+
+                        <CheckBox x:Name="ClipboardWidgetCheck" Content="{loc:Tr Widgets.Clipboard}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Margin="24,0,0,14">
+                            <TextBlock Text="{loc:Tr Widgets.ClipboardCount}" Margin="0,0,0,4" />
+                            <DockPanel Margin="0,0,0,6">
+                                <TextBlock DockPanel.Dock="Right" Width="28" TextAlignment="Right" Text="{Binding Value, ElementName=ClipboardCountSlider}" />
+                                <Slider x:Name="ClipboardCountSlider"
+                                        Minimum="3"
+                                        Maximum="20"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        AutomationProperties.Name="{loc:Tr Widgets.ClipboardCount}" />
+                            </DockPanel>
+                            <TextBlock Text="{loc:Tr Widgets.ClipboardPrivacy}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
+                        </StackPanel>
+
+                        <CheckBox x:Name="MediaWidgetCheck" Content="{loc:Tr Widgets.Media}" FontWeight="SemiBold" />
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
     </DockPanel>

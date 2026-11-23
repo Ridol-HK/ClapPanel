@@ -1,0 +1,111 @@
+<!--
+Copyright (C) 2026 Ridol-HK
+This file is part of ClapPanel.
+ClapPanel is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
+-->
+<UserControl x:Class="ClapPanel.Views.WidgetsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:ClapPanel.Localization"
+             Visibility="Collapsed">
+    <UserControl.Resources>
+        <Style x:Key="WidgetCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource TileBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TileBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{Binding TileRadius, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="4,2,4,6" />
+        </Style>
+    </UserControl.Resources>
+    <StackPanel>
+        <Border x:Name="ClockCard" Style="{StaticResource WidgetCardStyle}">
+            <StackPanel>
+                <TextBlock x:Name="TimeText"
+                           FontSize="28"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextBrush}"
+                           AutomationProperties.Name="{loc:Tr Widgets.Clock}" />
+                <TextBlock x:Name="DateText" Foreground="{DynamicResource MutedTextBrush}" />
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="MediaCard" Style="{StaticResource WidgetCardStyle}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="⏮"
+                        FontFamily="Segoe UI Symbol"
+                        FontSize="16"
+                        Width="48"
+                        Height="34"
+                        Margin="0,0,6,0"
+                        ToolTip="{loc:Tr Widgets.MediaPrev}"
+                        AutomationProperties.Name="{loc:Tr Widgets.MediaPrev}"
+                        Click="Previous_Click" />
+                <Button Content="⏯"
+                        FontFamily="Segoe UI Symbol"
+                        FontSize="16"
+                        Width="48"
+                        Height="34"
+                        Margin="0,0,6,0"
+                        ToolTip="{loc:Tr Widgets.MediaPlayPause}"
+                        AutomationProperties.Name="{loc:Tr Widgets.MediaPlayPause}"
+                        Click="PlayPause_Click" />
+                <Button Content="⏭"
+                        FontFamily="Segoe UI Symbol"
+                        FontSize="16"
+                        Width="48"
+                        Height="34"
+                        ToolTip="{loc:Tr Widgets.MediaNext}"
+                        AutomationProperties.Name="{loc:Tr Widgets.MediaNext}"
+                        Click="Next_Click" />
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="NotesCard" Style="{StaticResource WidgetCardStyle}">
+            <TextBox x:Name="NotesBox"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     MinHeight="60"
+                     MaxHeight="130"
+                     VerticalScrollBarVisibility="Auto"
+                     ToolTip="{loc:Tr Widgets.NotesTip}"
+                     AutomationProperties.Name="{loc:Tr Widgets.Notes}"
+                     TextChanged="NotesBox_TextChanged" />
+        </Border>
+
+        <Border x:Name="ClipboardCard" Style="{StaticResource WidgetCardStyle}">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,6">
+                    <Button x:Name="ClearClipboardButton"
+                            DockPanel.Dock="Right"
+                            Content="{loc:Tr Widgets.ClipboardClear}"
+                            Padding="8,2"
+                            Click="ClearClipboard_Click" />
+                    <TextBlock Text="{loc:Tr Widgets.Clipboard}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+                <TextBlock x:Name="ClipboardEmptyText"
+                           Text="{loc:Tr Widgets.ClipboardEmpty}"
+                           Foreground="{DynamicResource MutedTextBrush}" />
+                <ItemsControl x:Name="ClipboardList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Margin="0,2,0,0"
+                                    Padding="8,4"
+                                    ToolTip="{loc:Tr Widgets.ClipboardCopyTip}"
+                                    AutomationProperties.Name="{Binding Preview}"
+                                    Click="ClipboardEntry_Click">
+                                <TextBlock Text="{Binding Preview}"
+                                           MaxWidth="320"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

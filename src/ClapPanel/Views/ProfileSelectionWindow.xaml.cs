@@ -10,6 +10,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 using ClapPanel.Theming;
 using ClapPanelThemeMode = ClapPanel.Settings.ThemeMode;
@@ -35,12 +36,12 @@ public partial class ProfileSelectionWindow : Window
             AccentBrush = AppearancePalette.Brush(palette.Accent);
             var themeName = profile.Appearance.Theme switch
             {
-                ClapPanelThemeMode.Light => "Tema claro",
-                ClapPanelThemeMode.Dark => "Tema oscuro",
-                _ => "Tema del sistema"
+                ClapPanelThemeMode.Light => Loc.Get("Profile.ThemeLight"),
+                ClapPanelThemeMode.Dark => Loc.Get("Profile.ThemeDark"),
+                _ => Loc.Get("Profile.ThemeSystem")
             };
-            var displayMode = profile.Appearance.FullScreen ? "Pantalla completa" : "Ventana";
-            Summary = $"{themeName} · {Math.Clamp(profile.Columns, 1, 10)} columnas · {displayMode}";
+            var displayMode = profile.Appearance.FullScreen ? Loc.Get("Profile.FullScreen") : Loc.Get("Profile.Windowed");
+            Summary = Loc.Format("Profile.Summary", themeName, Math.Clamp(profile.Columns, 1, 10), displayMode);
         }
     }
 

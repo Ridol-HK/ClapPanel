@@ -8,50 +8,52 @@ ClapPanel is distributed WITHOUT ANY WARRANTY. See the LICENSE file for details.
         x:Class="ClapPanel.Views.ItemEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Acceso directo"
+        xmlns:loc="clr-namespace:ClapPanel.Localization"
+        Title="{loc:Tr Editor.TitleShortcut}"
         Width="460"
         SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     <StackPanel Margin="20">
-        <CheckBox x:Name="FolderCheck" Content="Es una carpeta desplegable de ClapPanel" Margin="0,0,0,14" Checked="FolderType_Changed" Unchecked="FolderType_Changed" />
+        <CheckBox x:Name="FolderCheck" Content="{loc:Tr Editor.IsFolder}" Margin="0,0,0,14" Checked="FolderType_Changed" Unchecked="FolderType_Changed" />
 
-        <TextBlock Text="Nombre" />
+        <TextBlock Text="{loc:Tr Editor.Name}" />
         <TextBox x:Name="NameBox" Margin="0,6,0,16" />
 
         <StackPanel x:Name="TargetPanel">
-            <TextBlock Text="Destino" />
-            <DockPanel Margin="0,6,0,16">
-                <Button DockPanel.Dock="Right" Content="Archivo" Padding="10,2" Margin="8,0,0,0" Click="BrowseTarget_Click" />
-                <Button DockPanel.Dock="Right" Content="Carpeta" Padding="10,2" Margin="8,0,0,0" Click="BrowseFolder_Click" />
+            <TextBlock Text="{loc:Tr Editor.Target}" />
+            <DockPanel Margin="0,6,0,8">
+                <Button DockPanel.Dock="Right" Content="{loc:Tr Editor.File}" Padding="10,2" Margin="8,0,0,0" Click="BrowseTarget_Click" />
+                <Button DockPanel.Dock="Right" Content="{loc:Tr Editor.Folder}" Padding="10,2" Margin="8,0,0,0" Click="BrowseFolder_Click" />
                 <TextBox x:Name="TargetBox" TextChanged="Target_TextChanged" />
             </DockPanel>
+            <Button Content="{loc:Tr Editor.InstalledApps}" HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,16" Click="BrowseInstalled_Click" />
         </StackPanel>
 
         <StackPanel x:Name="ArgumentsPanel">
-            <TextBlock Text="Argumentos (opcional)" />
+            <TextBlock Text="{loc:Tr Editor.Arguments}" />
             <TextBox x:Name="ArgumentsBox" Margin="0,6,0,16" />
         </StackPanel>
 
-        <TextBlock Text="Categoría (opcional; por ejemplo Juegos, Trabajo o Multimedia)" TextWrapping="Wrap" />
+        <TextBlock Text="{loc:Tr Editor.Category}" TextWrapping="Wrap" />
         <TextBox x:Name="CategoryBox" Margin="0,6,0,10" />
-        <CheckBox x:Name="FavoriteCheck" Content="Marcar como favorito" Margin="0,0,0,16" />
+        <CheckBox x:Name="FavoriteCheck" Content="{loc:Tr Editor.Favorite}" Margin="0,0,0,16" />
 
-        <TextBlock Text="Imagen personalizada (opcional)" />
+        <TextBlock Text="{loc:Tr Editor.Image}" />
         <DockPanel Margin="0,6,0,20">
             <Image x:Name="PreviewImage" DockPanel.Dock="Left" Width="48" Height="48" Margin="0,0,12,0" />
             <StackPanel>
                 <TextBox x:Name="ImageBox" IsReadOnly="True" Margin="0,0,0,6" />
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="Elegir imagen" Style="{StaticResource AccentButtonStyle}" Padding="10,2" Click="BrowseImage_Click" />
-                    <Button Content="Quitar" Style="{StaticResource DangerButtonStyle}" Padding="10,2" Margin="8,0,0,0" Click="ClearImage_Click" />
+                    <Button Content="{loc:Tr Editor.ChooseImage}" Style="{StaticResource AccentButtonStyle}" Padding="10,2" Click="BrowseImage_Click" />
+                    <Button Content="{loc:Tr Editor.RemoveImage}" Style="{StaticResource DangerButtonStyle}" Padding="10,2" Margin="8,0,0,0" Click="ClearImage_Click" />
                 </StackPanel>
             </StackPanel>
         </DockPanel>
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancelar" IsCancel="True" Padding="20,6" Margin="0,0,8,0" />
-            <Button Content="Aceptar" Style="{StaticResource AccentButtonStyle}" IsDefault="True" Padding="20,6" Click="Accept_Click" />
+            <Button Content="{loc:Tr Common.Cancel}" IsCancel="True" Padding="20,6" Margin="0,0,8,0" />
+            <Button Content="{loc:Tr Common.Accept}" Style="{StaticResource AccentButtonStyle}" IsDefault="True" Padding="20,6" Click="Accept_Click" />
         </StackPanel>
     </StackPanel>
 </Window>

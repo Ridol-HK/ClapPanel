@@ -5,6 +5,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace ClapPanel.Settings;
 
@@ -27,7 +29,81 @@ public sealed class PanelItem
 
     public string Arguments { get; set; } = "";
 
+    // Category is kept as the primary category so existing settings.json files remain compatible.
     public string Category { get; set; } = "";
+
+    /// <summary>Additional categories beyond the legacy primary Category field.</summary>
+    public List<string> AdditionalCategories { get; set; } = new();
+
+    [JsonIgnore]
+    public IReadOnlyList<string> Categories
+    {
+        get
+        {
+            var values = new List<string>();
+            AddCategoryValues(values, Category);
+            if (AdditionalCategories is not null)
+            {
+                foreach (var category in AdditionalCategories)
+                {
+                    AddCategoryValues(values, category);
+                }
+            }
+
+            return values;
+        }
+    }
+
+    [JsonIgnore]
+    public string CategoriesText => string.Join(", ", Categories);
+
+    /// <summary>Replaces this item's categories, removing duplicates and empty values.</summary>
+    public void SetCategories(IEnumerable<string>? categories)
+    {
+        var normalized = new List<string>();
+        if (categories is not null)
+        {
+            foreach (var category in categories)
+            {
+                AddCategoryValues(normalized, category);
+            }
+        }
+
+        Category = normalized.FirstOrDefault() ?? "";
+        AdditionalCategories = normalized.Skip(1).ToList();
+    }
+
+    /// <summary>Normalizes old single-category and new multi-category settings after loading.</summary>
+    public void NormalizeCategories()
+    {
+        var values = new List<string>();
+        AddCategoryValues(values, Category);
+        if (AdditionalCategories is not null)
+        {
+            foreach (var category in AdditionalCategories)
+            {
+                AddCategoryValues(values, category);
+            }
+        }
+
+        SetCategories(values);
+    }
+
+    private static void AddCategoryValues(List<string> destination, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        foreach (var category in value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!destination.Contains(category, StringComparer.CurrentCultureIgnoreCase))
+            {
+                destination.Add(category);
+            }
+        }
+    }
 
     public bool IsFavorite { get; set; }
 
@@ -40,13 +116,14 @@ public sealed class PanelItem
 
     [System.Text.Json.Serialization.JsonIgnore]
     public string DisplayLabel =>
-        $"{(IsFavorite ? "★ " : "")}{Name}{(string.IsNullOrWhiteSpace(Category) ? "" : $"  [{Category}]")}{(IsFolder ? "  📁" : "")}";
+        $"{(IsFavorite ? "★ " : "")}{Name}{(Categories.Count == 0 ? "" : $"  [{CategoriesText}]")}{(IsFolder ? "  📁" : "")}";
 
     public PanelItem Clone() => CloneDeep();
 
     public PanelItem CloneDeep()
     {
         var clone = (PanelItem)MemberwiseClone();
+        clone.AdditionalCategories = AdditionalCategories is null ? new List<string>() : new List<string>(AdditionalCategories);
         clone.Children = Children is null
             ? new List<PanelItem>()
             : Children.ConvertAll(child => child.CloneDeep());

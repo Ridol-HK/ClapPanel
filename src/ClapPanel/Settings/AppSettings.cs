@@ -5,12 +5,18 @@
 
 using System.Collections.Generic;
 using ClapPanel.Detection;
+using ClapPanel.Localization;
 
 namespace ClapPanel.Settings;
 
 public sealed class AppSettings
 {
     public string? MicrophoneId { get; set; }
+
+    /// <summary>Whether the first-run setup assistant has been completed or skipped.</summary>
+    public bool FirstRunCompleted { get; set; }
+
+    public GlobalShortcutSettings GlobalShortcut { get; set; } = new();
 
     public int Sensitivity { get; set; } = 60;
 
@@ -20,6 +26,12 @@ public sealed class AppSettings
 
     /// <summary>Whether the panel can be moved by dragging its top bar.</summary>
     public bool AllowPanelMovement { get; set; } = true;
+
+    /// <summary>Whether the last selected category filter is restored when the panel opens.</summary>
+    public bool RememberCategorySelection { get; set; } = true;
+
+    /// <summary>The last selected category filter; an empty value means all categories.</summary>
+    public string LastSelectedCategory { get; set; } = "";
 
     /// <summary>Last custom horizontal position in WPF device-independent pixels (legacy fallback).</summary>
     public double? PanelLeft { get; set; }
@@ -37,4 +49,8 @@ public sealed class AppSettings
     public DetectionOptions Detection { get; set; } = new();
 
     public AppearanceSettings Appearance { get; set; } = new();
+
+    public AppLanguage Language { get; set; } = AppLanguage.System;
+
+    public WidgetSettings Widgets { get; set; } = new();
 }

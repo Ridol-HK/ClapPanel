@@ -41,8 +41,21 @@ public sealed class AppearancePalette
 
     public Color DangerHover { get; init; }
 
+    public static bool UsesHighContrast(AppearanceSettings settings) =>
+        settings.HighContrast || SystemParameters.HighContrast;
+
     public static AppearancePalette From(AppearanceSettings settings)
     {
+        if (SystemParameters.HighContrast)
+        {
+            return FromSystemColors();
+        }
+
+        if (settings.HighContrast)
+        {
+            return FromHighContrast();
+        }
+
         var light = settings.Theme switch
         {
             ClapPanelThemeMode.Light => true,
@@ -90,6 +103,54 @@ public sealed class AppearancePalette
             AccentText = Luminance(accent) > 0.58 ? Rgb(0x18, 0x18, 0x18) : Rgb(0xFF, 0xFF, 0xFF),
             Danger = Rgb(0xD1, 0x34, 0x38),
             DangerHover = Rgb(0xA4, 0x26, 0x2C)
+        };
+    }
+
+    private static AppearancePalette FromHighContrast()
+    {
+        var black = Rgb(0, 0, 0);
+        var white = Rgb(0xFF, 0xFF, 0xFF);
+        var yellow = Rgb(0xFF, 0xFF, 0x00);
+
+        return new AppearancePalette
+        {
+            PanelBackground = black,
+            Tile = black,
+            TileHover = Rgb(0x33, 0x33, 0x33),
+            TileBorder = white,
+            Accent = yellow,
+            Text = white,
+            Muted = Rgb(0xE0, 0xE0, 0xE0),
+            WindowNavigation = black,
+            AccentSoft = Rgb(0x33, 0x33, 0x00),
+            AccentHover = Rgb(0xE6, 0xE6, 0x00),
+            AccentText = black,
+            Danger = Rgb(0xC0, 0x00, 0x00),
+            DangerHover = Rgb(0x90, 0x00, 0x00)
+        };
+    }
+
+    private static AppearancePalette FromSystemColors()
+    {
+        var window = SystemColors.WindowColor;
+        var text = SystemColors.WindowTextColor;
+        var highlight = SystemColors.HighlightColor;
+
+        return new AppearancePalette
+        {
+            PanelBackground = window,
+            Tile = window,
+            TileHover = SystemColors.ControlColor,
+            TileBorder = text,
+            Accent = highlight,
+            Text = text,
+            Muted = text,
+            WindowNavigation = window,
+            AccentSoft = window,
+            AccentHover = highlight,
+            AccentText = SystemColors.HighlightTextColor,
+            Danger = Rgb(0xC0, 0x00, 0x00),
+            DangerHover = Rgb(0x90, 0x00, 0x00)
         };
     }
 

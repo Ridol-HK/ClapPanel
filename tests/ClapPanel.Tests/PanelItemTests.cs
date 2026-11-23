@@ -54,4 +54,46 @@ public sealed class PanelItemTests
         Assert.Equal("Multimedia", restored.Name);
         Assert.Single(restored.Children);
     }
+
+    [Fact]
+    public void MultipleCategories_AreNormalizedAndDeepCloned()
+    {
+        var item = new PanelItem { Name = "Game", Category = "Games; Multimedia" };
+        item.AdditionalCategories = new List<string> { "Work", "games" };
+        item.NormalizeCategories();
+
+        Assert.Equal(new[] { "Games", "Multimedia", "Work" }, item.Categories);
+
+        var clone = item.CloneDeep();
+        clone.AdditionalCategories.Add("Streaming");
+
+        Assert.Equal(new[] { "Games", "Multimedia", "Work" }, item.Categories);
+        Assert.Equal(new[] { "Games", "Multimedia", "Work", "Streaming" }, clone.Categories);
+    }
+
+    [Fact]
+    public void LegacyCategoryJson_RemainsReadable()
+    {
+        const string json = "{\"Name\":\"Editor\",\"Category\":\"Work\"}";
+        var restored = System.Text.Json.JsonSerializer.Deserialize<PanelItem>(json);
+
+        Assert.NotNull(restored);
+        restored.NormalizeCategories();
+        Assert.Equal(new[] { "Work" }, restored.Categories);
+    }
+
+    [Fact]
+    public void MultipleCategories_AreSerializedAndRestored()
+    {
+        var item = new PanelItem { Name = "Game" };
+        item.SetCategories(new[] { "Games", "Multimedia" });
+
+        var json = System.Text.Json.JsonSerializer.Serialize(item);
+        var restored = System.Text.Json.JsonSerializer.Deserialize<PanelItem>(json);
+
+        Assert.NotNull(restored);
+        restored.NormalizeCategories();
+        Assert.Equal(new[] { "Games", "Multimedia" }, restored.Categories);
+    }
+
 }

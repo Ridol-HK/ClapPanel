@@ -64,6 +64,10 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                             <Setter TargetName="ButtonRoot" Property="Background" Value="{DynamicResource WindowSurfaceHoverBrush}" />
                             <Setter TargetName="ButtonRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                         </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ButtonRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="ButtonRoot" Property="BorderThickness" Value="2" />
+                        </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="ButtonRoot" Property="Opacity" Value="0.78" />
                         </Trigger>
@@ -118,6 +122,10 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                             <Setter TargetName="AccentRoot" Property="Background" Value="{DynamicResource AccentHoverBrush}" />
                             <Setter TargetName="AccentRoot" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
                         </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="AccentRoot" Property="BorderBrush" Value="{DynamicResource TextBrush}" />
+                            <Setter TargetName="AccentRoot" Property="BorderThickness" Value="2" />
+                        </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="AccentRoot" Property="Opacity" Value="0.82" />
                         </Trigger>
@@ -147,6 +155,10 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="DangerRoot" Property="Background" Value="{DynamicResource DangerHoverBrush}" />
                             <Setter TargetName="DangerRoot" Property="BorderBrush" Value="{DynamicResource DangerHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="DangerRoot" Property="BorderBrush" Value="{DynamicResource TextBrush}" />
+                            <Setter TargetName="DangerRoot" Property="BorderThickness" Value="2" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="DangerRoot" Property="Opacity" Value="0.82" />
@@ -188,6 +200,10 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                             <Setter TargetName="ToggleRoot" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
                             <Setter TargetName="ToggleRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                             <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ToggleRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="ToggleRoot" Property="BorderThickness" Value="2" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="ToggleRoot" Property="Opacity" Value="0.78" />
@@ -378,6 +394,10 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                             <Setter TargetName="CheckBoxRoot" Property="Background" Value="{DynamicResource AccentBrush}" />
                             <Setter TargetName="CheckBoxRoot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                             <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="CheckBoxRoot" Property="BorderBrush" Value="{DynamicResource TextBrush}" />
+                            <Setter TargetName="CheckBoxRoot" Property="BorderThickness" Value="2.5" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.45" />

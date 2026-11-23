@@ -29,7 +29,19 @@ public sealed class SettingsService
                 return new AppSettings();
             }
 
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path)) ?? new AppSettings();
+            var json = File.ReadAllText(_path);
+            using var document = JsonDocument.Parse(json);
+            var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+
+            // Existing installations predate the first-run assistant. Treat a
+            // legacy settings file without this property as already configured,
+            // so upgrading users are not interrupted by the onboarding flow.
+            if (document.RootElement.ValueKind == JsonValueKind.Object
+                && !document.RootElement.TryGetProperty(nameof(AppSettings.FirstRunCompleted), out _))
+            {
+                settings.FirstRunCompleted = true;
+            }
+
             Normalize(settings);
             return settings;
         }
@@ -53,6 +65,16 @@ public sealed class SettingsService
         settings.MonitorPositions ??= new Dictionary<string, PanelPositionData>(StringComparer.OrdinalIgnoreCase);
         settings.Appearance ??= new AppearanceSettings();
         settings.Detection ??= new DetectionOptions();
+        settings.Widgets ??= new WidgetSettings();
+        settings.GlobalShortcut ??= new GlobalShortcutSettings();
+        settings.Appearance.SmartDockVisibleItems = Math.Clamp(settings.Appearance.SmartDockVisibleItems, 1, 12);
+        settings.Appearance.SmartDockRevealThresholdPixels = Math.Clamp(settings.Appearance.SmartDockRevealThresholdPixels, 4, 40);
+        settings.GlobalShortcut.Modifiers &= 0x000F;
+        if (settings.GlobalShortcut.VirtualKeyCode <= 0 || settings.GlobalShortcut.VirtualKeyCode > 0xFE)
+        {
+            settings.GlobalShortcut.VirtualKeyCode = 0x20;
+        }
+        settings.LastSelectedCategory ??= "";
         foreach (var item in settings.Items)
         {
             NormalizeItem(item);
@@ -61,6 +83,8 @@ public sealed class SettingsService
         foreach (var profile in settings.AppearanceProfiles)
         {
             profile.Appearance ??= new AppearanceSettings();
+            profile.Appearance.SmartDockVisibleItems = Math.Clamp(profile.Appearance.SmartDockVisibleItems, 1, 12);
+            profile.Appearance.SmartDockRevealThresholdPixels = Math.Clamp(profile.Appearance.SmartDockRevealThresholdPixels, 4, 40);
         }
     }
 
@@ -70,6 +94,8 @@ public sealed class SettingsService
         item.Target ??= "";
         item.Arguments ??= "";
         item.Category ??= "";
+        item.AdditionalCategories ??= new List<string>();
+        item.NormalizeCategories();
         item.Children ??= new List<PanelItem>();
         foreach (var child in item.Children)
         {

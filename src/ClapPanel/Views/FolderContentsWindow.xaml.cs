@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using ClapPanel.Launcher;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 
 namespace ClapPanel.Views;
@@ -28,8 +29,9 @@ public partial class FolderContentsWindow : Window
         _items = new ObservableCollection<PanelItem>(_folder.Children);
 
         InitializeComponent();
-        FolderTitle.Text = $"Carpeta: {_folder.Name}";
+        FolderTitle.Text = Loc.Format("Folder.Header", _folder.Name);
         ItemsList.ItemsSource = _items;
+        ListBoxReorderBehavior.Attach(ItemsList);
         if (_items.Count > 0)
         {
             ItemsList.SelectedIndex = 0;
@@ -50,7 +52,7 @@ public partial class FolderContentsWindow : Window
 
     private void AddFolder_Click(object sender, RoutedEventArgs e)
     {
-        var folder = new PanelItem { Kind = PanelItemKind.Folder, Name = "Nueva carpeta" };
+        var folder = new PanelItem { Kind = PanelItemKind.Folder, Name = Loc.Get("Common.NewFolder") };
         var editor = new ItemEditorWindow(folder, _store, _icons) { Owner = this };
         if (editor.ShowDialog() == true)
         {

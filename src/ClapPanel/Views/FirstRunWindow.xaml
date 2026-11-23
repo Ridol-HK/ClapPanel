@@ -1,0 +1,130 @@
+<!--
+Copyright (C) 2026 Ridol-HK
+This file is part of ClapPanel.
+ClapPanel is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+-->
+<Window Style="{StaticResource {x:Type Window}}"
+        x:Class="ClapPanel.Views.FirstRunWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ClapPanel.Localization"
+        Title="{loc:Tr Setup.Title}"
+        Width="570"
+        Height="590"
+        MinWidth="520"
+        MinHeight="540"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel Margin="18">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="BackButton" Content="{loc:Tr Common.Back}" Padding="16,7" Margin="0,0,8,0" Click="Back_Click" Visibility="Collapsed" />
+            <Button Content="{loc:Tr Setup.Skip}" Padding="16,7" Margin="0,0,8,0" Click="Skip_Click" />
+            <Button x:Name="NextButton" Content="{loc:Tr Common.Next}" Style="{StaticResource AccentButtonStyle}" Padding="20,7" Click="Next_Click" />
+            <Button x:Name="FinishButton" Content="{loc:Tr Setup.Finish}" Style="{StaticResource AccentButtonStyle}" Padding="20,7" Click="Finish_Click" Visibility="Collapsed" />
+        </StackPanel>
+
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <TextBlock x:Name="StepText" Text="{loc:Tr Setup.Step1}" FontSize="12" Foreground="{DynamicResource MutedTextBrush}" />
+            <ProgressBar x:Name="StepProgress" Minimum="0" Maximum="3" Value="1" Height="4" Margin="0,8,0,0" />
+        </StackPanel>
+
+        <Grid>
+            <StackPanel x:Name="WelcomePage">
+                <TextBlock Text="{loc:Tr Setup.WelcomeTitle}" FontSize="25" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,12,0,12" />
+                <TextBlock Text="{loc:Tr Setup.WelcomeBody}" FontSize="14" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,22" />
+                <TextBlock Text="{loc:Tr Settings.Language}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <ComboBox x:Name="LanguageCombo" SelectedValuePath="Tag" AutomationProperties.Name="{loc:Tr Settings.Language}">
+                    <ComboBoxItem Content="{loc:Tr Lang.System}" Tag="System" />
+                    <ComboBoxItem Content="{loc:Tr Lang.Spanish}" Tag="Spanish" />
+                    <ComboBoxItem Content="{loc:Tr Lang.English}" Tag="English" />
+                </ComboBox>
+                <TextBlock Text="{loc:Tr Setup.WelcomeHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,12,0,0" />
+            </StackPanel>
+
+            <StackPanel x:Name="MicrophonePage" Visibility="Collapsed">
+                <TextBlock Text="{loc:Tr Setup.MicTitle}" FontSize="23" FontWeight="SemiBold" Margin="0,8,0,8" />
+                <TextBlock Text="{loc:Tr Setup.MicBody}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,16" />
+                <TextBlock Text="{loc:Tr Settings.TabMicrophone}" FontWeight="SemiBold" />
+                <ComboBox x:Name="DeviceCombo" DisplayMemberPath="Name" SelectedValuePath="Id" Margin="0,6,0,12" SelectionChanged="DeviceCombo_SelectionChanged" />
+                <Button Content="{loc:Tr Setup.TestMic}" HorizontalAlignment="Left" Padding="14,6" Click="TestMic_Click" />
+                <TextBlock x:Name="MicStatusText" Text="{loc:Tr Setup.MicWaiting}" TextWrapping="Wrap" Margin="0,10,0,8" />
+                <TextBlock Text="{loc:Tr Setup.PeakLevel}" />
+                <ProgressBar x:Name="PeakBar" Minimum="0" Maximum="1" Height="13" Margin="0,5,0,12" />
+                <TextBlock Text="{loc:Tr Setup.AverageLevel}" />
+                <ProgressBar x:Name="RmsBar" Minimum="0" Maximum="1" Height="13" Margin="0,5,0,8" />
+                <TextBlock x:Name="MicMeasurementText" Text="—" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,14" />
+                <TextBlock Text="{loc:Tr Settings.Sensitivity}" FontWeight="SemiBold" />
+                <DockPanel Margin="0,6,0,0">
+                    <TextBlock DockPanel.Dock="Right" Width="38" TextAlignment="Right" Text="{Binding Value, ElementName=SensitivitySlider, StringFormat='{}{0:0}'}" />
+                    <Slider x:Name="SensitivitySlider" Minimum="0" Maximum="100" Value="60" />
+                </DockPanel>
+            </StackPanel>
+
+            <StackPanel x:Name="ShortcutPage" Visibility="Collapsed">
+                <TextBlock Text="{loc:Tr Setup.ShortcutTitle}" FontSize="23" FontWeight="SemiBold" Margin="0,8,0,8" />
+                <TextBlock Text="{loc:Tr Setup.ShortcutBody}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" Margin="0,0,0,16" />
+                <CheckBox x:Name="HotkeyEnabledCheck" Content="{loc:Tr Settings.GlobalShortcutEnabled}" IsChecked="True" Margin="0,0,0,12" />
+                <TextBlock Text="{loc:Tr Settings.GlobalShortcutModifiers}" FontWeight="SemiBold" />
+                <WrapPanel Margin="0,6,0,14">
+                    <CheckBox x:Name="HotkeyCtrlCheck" Content="Ctrl" IsChecked="True" Margin="0,0,16,0" />
+                    <CheckBox x:Name="HotkeyAltCheck" Content="Alt" IsChecked="True" Margin="0,0,16,0" />
+                    <CheckBox x:Name="HotkeyShiftCheck" Content="Shift" Margin="0,0,16,0" />
+                    <CheckBox x:Name="HotkeyWinCheck" Content="Win" />
+                </WrapPanel>
+                <TextBlock Text="{loc:Tr Settings.GlobalShortcutKey}" FontWeight="SemiBold" />
+                <ComboBox x:Name="HotkeyKeyCombo" SelectedValuePath="Tag" Margin="0,6,0,14">
+                    <ComboBoxItem Content="Espacio / Space" Tag="32" />
+                    <ComboBoxItem Content="A" Tag="65" />
+                    <ComboBoxItem Content="B" Tag="66" />
+                    <ComboBoxItem Content="C" Tag="67" />
+                    <ComboBoxItem Content="D" Tag="68" />
+                    <ComboBoxItem Content="E" Tag="69" />
+                    <ComboBoxItem Content="F" Tag="70" />
+                    <ComboBoxItem Content="G" Tag="71" />
+                    <ComboBoxItem Content="H" Tag="72" />
+                    <ComboBoxItem Content="I" Tag="73" />
+                    <ComboBoxItem Content="J" Tag="74" />
+                    <ComboBoxItem Content="K" Tag="75" />
+                    <ComboBoxItem Content="L" Tag="76" />
+                    <ComboBoxItem Content="M" Tag="77" />
+                    <ComboBoxItem Content="N" Tag="78" />
+                    <ComboBoxItem Content="O" Tag="79" />
+                    <ComboBoxItem Content="P" Tag="80" />
+                    <ComboBoxItem Content="Q" Tag="81" />
+                    <ComboBoxItem Content="R" Tag="82" />
+                    <ComboBoxItem Content="S" Tag="83" />
+                    <ComboBoxItem Content="T" Tag="84" />
+                    <ComboBoxItem Content="U" Tag="85" />
+                    <ComboBoxItem Content="V" Tag="86" />
+                    <ComboBoxItem Content="W" Tag="87" />
+                    <ComboBoxItem Content="X" Tag="88" />
+                    <ComboBoxItem Content="Y" Tag="89" />
+                    <ComboBoxItem Content="Z" Tag="90" />
+                    <ComboBoxItem Content="0" Tag="48" />
+                    <ComboBoxItem Content="1" Tag="49" />
+                    <ComboBoxItem Content="2" Tag="50" />
+                    <ComboBoxItem Content="3" Tag="51" />
+                    <ComboBoxItem Content="4" Tag="52" />
+                    <ComboBoxItem Content="5" Tag="53" />
+                    <ComboBoxItem Content="6" Tag="54" />
+                    <ComboBoxItem Content="7" Tag="55" />
+                    <ComboBoxItem Content="8" Tag="56" />
+                    <ComboBoxItem Content="9" Tag="57" />
+                    <ComboBoxItem Content="Insert" Tag="45" />
+                    <ComboBoxItem Content="Inicio / Home" Tag="36" />
+                    <ComboBoxItem Content="Fin / End" Tag="35" />
+                    <ComboBoxItem Content="Re Pág / Page Up" Tag="33" />
+                    <ComboBoxItem Content="Av Pág / Page Down" Tag="34" />
+                    <ComboBoxItem Content="F1" Tag="112" /><ComboBoxItem Content="F2" Tag="113" />
+                    <ComboBoxItem Content="F3" Tag="114" /><ComboBoxItem Content="F4" Tag="115" />
+                    <ComboBoxItem Content="F5" Tag="116" /><ComboBoxItem Content="F6" Tag="117" />
+                    <ComboBoxItem Content="F7" Tag="118" /><ComboBoxItem Content="F8" Tag="119" />
+                    <ComboBoxItem Content="F9" Tag="120" /><ComboBoxItem Content="F10" Tag="121" />
+                    <ComboBoxItem Content="F11" Tag="122" /><ComboBoxItem Content="F12" Tag="123" />
+                </ComboBox>
+                <CheckBox x:Name="StartupCheck" Content="{loc:Tr Settings.StartWithWindows}" Margin="0,0,0,14" />
+                <TextBlock Text="{loc:Tr Setup.HotkeyHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>

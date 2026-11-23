@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using ClapPanel.Audio;
 using ClapPanel.Calibration;
 using ClapPanel.Detection;
+using ClapPanel.Localization;
 
 namespace ClapPanel.Views;
 
@@ -101,13 +102,12 @@ public partial class CalibrationWindow : Window
 
     private void ShowIntro()
     {
-        TitleText.Text = "Calibrar el micrófono";
-        BodyText.Text = "Vamos a medir el ruido de fondo, tu voz y tus aplausos con el micrófono elegido en Ajustes. "
-            + "Dura menos de 30 segundos y durante la calibración el panel no se abrirá.";
+        TitleText.Text = Loc.Get("Cal.IntroTitle");
+        BodyText.Text = Loc.Get("Cal.IntroBody");
         ProgressPanel.Visibility = Visibility.Collapsed;
         ResultText.Visibility = Visibility.Collapsed;
         SecondaryButton.Visibility = Visibility.Collapsed;
-        PrimaryButton.Content = "Empezar";
+        PrimaryButton.Content = Loc.Get("Cal.Start");
         PrimaryButton.IsEnabled = true;
     }
 
@@ -130,20 +130,19 @@ public partial class CalibrationWindow : Window
         switch (step)
         {
             case Step.Silence:
-                TitleText.Text = "Paso 1 de 3: silencio";
-                BodyText.Text = "Quédate en silencio unos segundos mientras medimos el ruido de fondo.";
-                PrimaryButton.Content = "Espera…";
+                TitleText.Text = Loc.Get("Cal.Step1Title");
+                BodyText.Text = Loc.Get("Cal.Step1Body");
+                PrimaryButton.Content = Loc.Get("Cal.Wait");
                 break;
             case Step.Voice:
-                TitleText.Text = "Paso 2 de 3: voz";
-                BodyText.Text = "Habla con normalidad, como lo harías frente al ordenador.";
-                PrimaryButton.Content = "Espera…";
+                TitleText.Text = Loc.Get("Cal.Step2Title");
+                BodyText.Text = Loc.Get("Cal.Step2Body");
+                PrimaryButton.Content = Loc.Get("Cal.Wait");
                 break;
             case Step.Claps:
-                TitleText.Text = "Paso 3 de 3: aplausos";
-                BodyText.Text = "Haz 4 dobles aplausos con la separación que usarías normalmente. "
-                    + "Espera un segundo entre cada doble aplauso. Puedes terminar antes cuando acabes.";
-                PrimaryButton.Content = "Terminar";
+                TitleText.Text = Loc.Get("Cal.Step3Title");
+                BodyText.Text = Loc.Get("Cal.Step3Body");
+                PrimaryButton.Content = Loc.Get("Cal.Finish");
                 break;
         }
     }
@@ -222,36 +221,34 @@ public partial class CalibrationWindow : Window
 
     private void ShowResult(CalibrationResult result)
     {
-        TitleText.Text = "Resultado de la calibración";
+        TitleText.Text = Loc.Get("Cal.ResultTitle");
         BodyText.Text = result.Quality switch
         {
-            CalibrationQuality.Good => "Calibración excelente: la voz y los aplausos se distinguen con claridad.",
-            CalibrationQuality.Fair => "Calibración aceptable. Puede haber algún fallo ocasional.",
-            CalibrationQuality.Poor => "La voz y los aplausos quedan demasiado cerca. Acerca el micrófono, "
-                + "bájale la ganancia en Windows o aplaude más fuerte, y repite la calibración.",
-            _ => "No se detectaron suficientes aplausos. Comprueba que el micrófono elegido es el correcto "
-                + "y repite la calibración."
+            CalibrationQuality.Good => Loc.Get("Cal.Good"),
+            CalibrationQuality.Fair => Loc.Get("Cal.Fair"),
+            CalibrationQuality.Poor => Loc.Get("Cal.Poor"),
+            _ => Loc.Get("Cal.Failed")
         };
 
         var lines = new List<string>();
         if (result.Sensitivity is { } sensitivity)
         {
-            lines.Add($"Sensibilidad recomendada: {sensitivity} (actual: {_currentSensitivity})");
-            lines.Add($"Dobles aplausos reconocidos con ese valor: {result.DoubleClapsDetected} de {CalibrationAnalyzer.ExpectedDoubleClaps}");
-            lines.Add($"Falsos disparos con silencio y voz: {result.FalseTriggers}");
+            lines.Add(Loc.Format("Cal.Recommended", sensitivity, _currentSensitivity));
+            lines.Add(Loc.Format("Cal.Doubles", result.DoubleClapsDetected, CalibrationAnalyzer.ExpectedDoubleClaps));
+            lines.Add(Loc.Format("Cal.FalseTriggers", result.FalseTriggers));
         }
         else
         {
-            lines.Add($"Aplausos detectados: {result.ClapsFound} (se necesitan al menos 6)");
+            lines.Add(Loc.Format("Cal.ClapsDetected", result.ClapsFound));
         }
 
-        lines.Add($"Ruido: {result.NoiseLevel:0.000} · voz: {result.VoiceLevel:0.000} · aplauso más débil: {result.WeakestClap:0.000}");
+        lines.Add(Loc.Format("Cal.Levels", result.NoiseLevel, result.VoiceLevel, result.WeakestClap));
 
         ResultText.Text = string.Join(Environment.NewLine, lines);
         ProgressPanel.Visibility = Visibility.Collapsed;
         ResultText.Visibility = Visibility.Visible;
         SecondaryButton.Visibility = Visibility.Visible;
-        PrimaryButton.Content = "Aplicar";
+        PrimaryButton.Content = Loc.Get("Common.Apply");
         PrimaryButton.IsEnabled = result.Sensitivity is not null;
     }
 
@@ -262,7 +259,7 @@ public partial class CalibrationWindow : Window
             return true;
         }
 
-        MessageBox.Show(this, "No se pudo abrir el micrófono seleccionado.", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(this, Loc.Get("Cal.MicError"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
         return false;
     }
 

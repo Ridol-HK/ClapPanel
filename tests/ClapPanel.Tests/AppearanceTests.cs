@@ -118,6 +118,24 @@ public class AppearanceTests
 
 
     [Fact]
+    public void InactiveOpacityAnimationIsEnabledByDefault()
+    {
+        var appearance = new AppearanceSettings();
+
+        Assert.True(appearance.AnimateInactiveOpacity);
+    }
+
+    [Fact]
+    public void CloningAppearancePreservesInactiveOpacityAnimationPreference()
+    {
+        var appearance = new AppearanceSettings { AnimateInactiveOpacity = false };
+
+        var clone = appearance.Clone();
+
+        Assert.False(clone.AnimateInactiveOpacity);
+    }
+
+    [Fact]
     public void FullScreenIsDisabledByDefault()
     {
         var appearance = new AppearanceSettings();
@@ -141,6 +159,33 @@ public class AppearanceTests
         Assert.Equal(96, AppearanceLayout.IconSize(new AppearanceSettings { IconSize = 500 }));
         Assert.Equal(24, AppearanceLayout.IconSize(new AppearanceSettings { IconSize = 1 }));
         Assert.Equal(0.4, AppearanceLayout.Opacity(new AppearanceSettings { Opacity = 0.1 }));
+    }
+
+    [Fact]
+    public void SmartDockCustomizationHasSafeDefaults()
+    {
+        var appearance = new AppearanceSettings();
+
+        Assert.Equal(6, appearance.SmartDockVisibleItems);
+        Assert.False(appearance.SmartDockPrioritizeFavorites);
+        Assert.Equal(12, appearance.SmartDockRevealThresholdPixels);
+    }
+
+    [Fact]
+    public void CloningAppearancePreservesSmartDockCustomization()
+    {
+        var appearance = new AppearanceSettings
+        {
+            SmartDockVisibleItems = 10,
+            SmartDockPrioritizeFavorites = true,
+            SmartDockRevealThresholdPixels = 28
+        };
+
+        var clone = appearance.Clone();
+
+        Assert.Equal(10, clone.SmartDockVisibleItems);
+        Assert.True(clone.SmartDockPrioritizeFavorites);
+        Assert.Equal(28, clone.SmartDockRevealThresholdPixels);
     }
 
     [Theory]

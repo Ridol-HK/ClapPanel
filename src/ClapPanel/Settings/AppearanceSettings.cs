@@ -77,11 +77,30 @@ public sealed class AppearanceSettings
 
     public int AutoHideDelaySeconds { get; set; } = 5;
 
+    /// <summary>Maximum number of shortcuts shown by the compact smart dock (1–12).</summary>
+    public int SmartDockVisibleItems { get; set; } = 6;
+
+    /// <summary>Shows favorite shortcuts before regular shortcuts in the smart dock.</summary>
+    public bool SmartDockPrioritizeFavorites { get; set; }
+
+    /// <summary>Width of the screen-edge activation strip used to reveal an auto-hidden panel (4–40 px).</summary>
+    public int SmartDockRevealThresholdPixels { get; set; } = 12;
+
     public PanelDockEdge DockEdge { get; set; } = PanelDockEdge.None;
 
     public bool DynamicTransparency { get; set; }
 
     public double InactiveOpacity { get; set; } = 0.65;
+
+    /// <summary>Seconds to wait after the pointer leaves before applying inactive opacity.</summary>
+    public double InactiveOpacityDelaySeconds { get; set; } = 0;
+
+    /// <summary>Whether inactive-opacity changes use a short, smooth fade instead of an immediate switch.</summary>
+    public bool AnimateInactiveOpacity { get; set; } = true;
+
+    public bool HighContrast { get; set; }
+
+    public bool ShowShortcutNumbers { get; set; } = true;
 
     /// <summary>WinForms screen device name. Empty means the primary monitor.</summary>
     public string MonitorDeviceName { get; set; } = "";

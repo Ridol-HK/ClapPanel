@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 using ClapPanel.Theming;
 
@@ -49,7 +50,7 @@ public sealed class PanelPreview : Border
             {
                 content.Children.Add(new TextBlock
                 {
-                    Text = "Ejemplo",
+                    Text = Loc.Get("Preview.Sample"),
                     Foreground = AppearancePalette.Brush(palette.Text),
                     Margin = new Thickness(0, 6, 0, 0),
                     TextAlignment = TextAlignment.Center

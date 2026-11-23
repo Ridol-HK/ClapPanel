@@ -1,141 +1,217 @@
 # ClapPanel
 
-Aplicación para Windows 10/11 que abre y cierra un panel de accesos directos al detectar un doble aplauso.
+[English](README.md) | [Español](README.es.md)
 
-## Características
+ClapPanel is a Windows 10/11 application that opens and closes a shortcut panel when it detects a double clap.
 
-- Detección de doble aplauso que distingue el aplauso de la voz y del ruido ambiente.
-- Panel de accesos directos con carpetas, categorías, favoritos y buscador.
-- Apariencia personalizable con perfiles, y panel móvil, redimensionable y acoplable.
-- Calibración asistida del micrófono.
-- Inicio opcional con Windows e icono en la bandeja del sistema.
+**Latest version: 1.5.0**
 
-## Requisitos
+## Features
 
-- Windows 10 u 11 y un micrófono.
-- Para compilar desde el código: .NET 10 SDK.
+- Double-clap detection designed to distinguish claps from speech and ambient noise.
+- Shortcut panel with folders, categories, favorites, and search.
+- A shortcut can belong to multiple categories at the same time.
+- Optional restoration of the last selected category when the panel is opened again.
+- Customizable appearance profiles and a panel that can be moved, resized, docked, or displayed full screen.
+- Configurable dynamic transparency, including an optional smooth fade and the delay before inactive opacity is applied.
+- Live microphone input monitor with peak and average levels, sample rate, channel count, and diagnostics for signal and capture errors.
+- Assisted microphone calibration.
+- Configurable global keyboard shortcut to open or close the panel while ClapPanel is in the background.
+- Keyboard navigation, screen-reader support, and high-contrast mode.
+- Optional widgets: clock, quick notes, clipboard history, and media playback controls.
+- Spanish and English interface.
+- First-run setup assistant to choose and test the microphone, adjust sensitivity, and configure the global shortcut.
+- Smart dock can show 1–12 shortcuts, prioritize favorites, and customize the screen-edge reveal zone width.
+- Optional Windows startup and system tray icon.
 
-## Instalación
+## Requirements
 
-### Ejecutable
+- Windows 10 or 11 and a microphone.
+- .NET 10 SDK to build from source.
 
-1. Descarga `ClapPanel-vX.Y.Z-win-x64.zip` desde la sección Releases del repositorio.
-2. Extrae el contenido y ejecuta `ClapPanel.exe`.
+## Installation
 
-No hace falta instalar .NET. Como el ejecutable no está firmado, Windows SmartScreen puede mostrar un aviso: elige «Más información» y luego «Ejecutar de todos modos».
+### Release executable
 
-### Desde el código
+1. Download `ClapPanel-vX.Y.Z-win-x64.zip` from [Releases](https://github.com/Ridol-HK/ClapPanel/releases).
+2. Extract the archive and run `ClapPanel.exe`.
 
-```
+You do not need to install .NET. Since the executable is not signed, Windows SmartScreen may show a warning. Select **More info** and then **Run anyway**.
+
+### From source
+
+```powershell
+git clone https://github.com/Ridol-HK/ClapPanel.git
+cd ClapPanel
 dotnet run --project src/ClapPanel
 ```
 
-Para generar el ejecutable:
+To publish a self-contained executable:
 
-```
+```powershell
 dotnet publish src/ClapPanel -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-## Uso
+## Usage
 
-- Doble aplauso: abre el panel; con el panel abierto, lo cierra.
-- Icono de bandeja: abrir o cerrar el panel, abrir ajustes, pausar la captura del micrófono y salir.
-- Clic en un icono: abre su destino sin cerrar el panel. Las carpetas internas de ClapPanel se despliegan dentro del mismo panel.
-- Botón «⋯»: abre directamente la pestaña de apariencia.
-- Barra superior «ClapPanel»: permite arrastrar el panel cuando el movimiento está habilitado. Al acercarlo a los bordes izquierdo o derecho, se acopla y cambia a una disposición vertical de una columna.
-- Bordes y esquinas del panel: permiten cambiar su tamaño arrastrando el cursor; los tamaños horizontal y vertical se guardan por monitor.
-- Arrastrar un icono sobre otro lo reordena; arrastrarlo sobre una carpeta lo mueve a esa carpeta. Soltarlo en el espacio vacío lo lleva al final de su lista.
-- Arrastrar ejecutables, accesos directos, archivos o carpetas de Windows al panel crea accesos directos. Al soltar sobre una carpeta interna, el acceso se agrega a esa carpeta.
-- Pantalla completa: pulsa Esc para limpiar primero la búsqueda y luego cerrar el menú, o usa el botón ×.
+- **Double clap:** opens the panel; another double clap closes it.
+- **Global shortcut:** Ctrl + Alt + Space opens or closes the panel from any application by default. Change or disable it in Settings → General.
+- **System tray icon:** opens or closes the panel, opens Settings, pauses microphone capture, or exits the application.
+- **Click an icon:** launches its target without closing the panel. ClapPanel folders open inside the same panel.
+- **⋯ button:** opens the Appearance tab directly.
+- **ClapPanel title bar:** drag it to move the panel when movement is enabled. Moving it close to the left or right edge docks it and switches to a one-column vertical layout.
+- **Panel edges and corners:** drag them to resize the panel. Horizontal and vertical sizes are saved separately for each monitor.
+- **Drag one icon onto another:** reorder it by dropping before or after the target icon. Dropping it directly onto a folder moves it into that folder; dropping it on empty space moves it to the end of the current list.
+- **Settings → Icons and folders:** drag entries in the list to change their order; the same works in the contents editor for nested folders.
+- **Drag Windows executables, shortcuts, files, or folders onto the panel:** creates shortcuts. Dropping an item onto an internal folder adds it to that folder.
+- **Esc:** clears the search first; when the search is already empty, it closes the panel. The × button does the same.
+- **Keyboard controls:** see [Keyboard and accessibility](#keyboard-and-accessibility).
 
-## Organización de aplicaciones
+## Keyboard and accessibility
 
-En Ajustes → Iconos y carpetas se pueden agregar y editar aplicaciones y carpetas internas, asignar una categoría, marcar favoritos y elegir una imagen personalizada. Las carpetas admiten subcarpetas y aplicaciones. En el panel:
+When the panel opens, keyboard focus moves to the first icon, so the panel can be used without a mouse.
 
-- El buscador encuentra nombres, destinos y categorías, incluso dentro de carpetas anidadas.
-- El selector de categorías y el filtro de favoritos también incluyen elementos dentro de carpetas.
-- Las carpetas internas se abren en el panel y tienen un botón para volver.
-- Los elementos se pueden reorganizar arrastrándolos; también es posible moverlos entre carpetas.
+| Key | Action |
+| --- | --- |
+| Arrow keys | Move between icons and controls; each move resets the inactivity counter and keeps the panel opaque during keyboard navigation |
+| Enter or Space | Open the selected icon or folder |
+| 1–9 and 0 | Open items 1–10 in the currently visible list |
+| `/`, Ctrl+F, or a letter | Focus the search box |
+| Down arrow (in the search box) | Move to the icons |
+| Home / End | Select the first or last icon |
+| Backspace or Alt+Left | Return to the previous folder |
+| Esc | Clear the search or close the panel |
 
-Los accesos directos admiten destino, argumentos y una imagen opcional. Los destinos pueden ser ejecutables, accesos directos de Windows, archivos, carpetas o direcciones compatibles con el controlador de Windows. Una carpeta añadida como destino abre el Explorador; una carpeta interna de ClapPanel despliega sus propios elementos.
+- Shortcut numbers can be displayed on icons (Settings → General → Accessibility).
+- Keyboard focus is visible in the panel and Settings. Icons, folders, and buttons have screen-reader names; screen readers also announce the number of results when searching or filtering.
+- High-contrast mode (black, white, and yellow) can be enabled in Settings → General → Accessibility. ClapPanel automatically uses it when Windows has a high-contrast theme enabled.
 
-## Ajustes
+## Widgets
 
-La ventana de ajustes tiene cuatro pestañas: General, Micrófono, Apariencia e Iconos y carpetas. Sus pestañas, botones, campos y listas adoptan la misma paleta del panel. Los cambios de apariencia se previsualizan mientras se editan: Guardar conserva todos los ajustes; Cancelar o cerrar la ventana revierte la vista previa.
+In **Settings → Widgets**, choose which widgets appear at the top of the panel:
 
-### General y micrófono
+- **Clock:** 12- or 24-hour format, optional seconds, and optional date.
+- **Quick notes:** a text box that is saved automatically in `settings.json`.
+- **Clipboard:** remembers 3–20 recent text entries. Entries are kept only while ClapPanel is running, are not written to disk, and are cleared when the application closes. Password managers that mark their content as private are ignored. Click an entry to copy it again.
+- **Media playback controls:** previous track, play/pause, and next track, using Windows multimedia keys.
 
-- Inicio con Windows.
-- Permitir o bloquear el movimiento manual del panel, detener la captura del micrófono, restablecer los valores predeterminados o cerrar ClapPanel. El restablecimiento elimina también accesos directos y perfiles personalizados.
-- Selección del micrófono, sensibilidad y calibración.
+## Organizing applications and categories
 
-### Apariencia
+In **Settings → Icons and folders**, you can add and edit applications and internal folders, assign categories, mark favorites, and choose a custom image. A shortcut can belong to more than one category: enter category names separated by commas or semicolons, for example `Games, Multimedia`. Folders support nested folders and applications.
 
-- Tema del sistema, claro u oscuro; color de fondo y color de acento.
-- Opacidad base y reducción de opacidad cuando el puntero no está sobre el panel.
-- Tamaño de iconos, nombres visibles y esquinas redondeadas.
-- Animación configurable: ninguna, desvanecer, escala, deslizar, entrada desde arriba, zoom con rebote suave o rebote ligero.
-- Columnas del panel.
-- Perfiles visuales que guardan y restauran la apariencia, el número de columnas y el modo de pantalla completa.
+In the panel:
 
-### Posición y monitores
+- Search matches names, targets, and categories, including items inside nested folders.
+- The category selector and favorites filter also include items inside folders.
+- An item assigned to multiple categories appears when any one of those categories is selected.
+- Internal folders open inside the panel and include a Back button.
+- Items can be rearranged by dragging in the panel or in **Settings → Icons and folders**. In the panel, drop before or after another shortcut to set its position; drop directly onto a folder to move it inside. The Settings list and nested-folder editor also support drag reordering.
+- When **Remember the last selected category** is enabled in Settings → General, the panel restores that category the next time it opens. Disable the option to always start with all categories.
 
-- Selección del monitor. Cada pantalla conserva su última posición manual y sus tamaños horizontal y vertical.
-- Posición inicial en cualquiera de las cuatro esquinas o el centro.
-- Acoplamiento opcional a los bordes izquierdo, derecho, superior o inferior. El acoplamiento a izquierda o derecha cambia el panel a formato vertical.
-- Pantalla completa: el menú ocupa todo el monitor seleccionado. En este modo se desactivan el movimiento, el redimensionamiento y el ocultamiento automático.
-- Ocultamiento automático configurable entre 1 y 30 segundos. El panel vuelve a aparecer al acercar el puntero al borde asociado a su posición o acoplamiento, o al más cercano a su ubicación actual.
+When adding or editing a shortcut, **Installed applications…** opens a searchable list of applications from the Start menu and Microsoft Store, so you do not have to locate the `.exe` manually.
 
-## Calibración
+Shortcuts support a target, arguments, and an optional image. Targets can be executables, Windows shortcuts, files, folders, or addresses supported by the Windows handler. A folder used as a target opens in File Explorer; an internal ClapPanel folder displays its own items.
 
-En Ajustes, pestaña Micrófono, el botón Calibrar abre un asistente de tres pasos:
+## Settings
 
-1. Silencio (3 s): mide el ruido de fondo.
-2. Voz (4 s): mide hasta dónde llega tu voz con el filtro de graves.
-3. Aplausos (hasta 14 s): cuatro dobles aplausos, con un segundo de pausa entre cada uno.
+On a fresh installation, the first time ClapPanel runs, a setup assistant helps choose and test the microphone, adjust sensitivity, and configure the global shortcut. It can be skipped, and all choices can later be changed in Settings. Existing installations keep their settings and do not see the assistant again after upgrading. The Settings window has five tabs: **General, Microphone, Appearance, Icons and folders, and Widgets**. Its tabs, buttons, fields, and lists use the same color palette as the panel.
 
-El asistente calcula la sensibilidad y la comprueba reproduciendo lo grabado con el detector real. Muestra cuántos dobles aplausos reconoce y si hay falsos disparos. Al aplicarla se actualiza el valor de sensibilidad y hay que pulsar Guardar.
+Appearance changes are previewed while editing. Select **Save** to keep them; select **Cancel** or close the window to revert the preview.
 
-## Detección
+### General
 
-- Se filtran los graves (voz) antes de analizar el sonido.
-- El pico debe ser seco: subida brusca y caída rápida.
-- Debe haber silencio antes del primer aplauso y entre ambos.
-- Los dos aplausos deben tener una fuerza parecida.
-- El umbral se adapta al ruido ambiente y nunca baja del nivel fijado por la sensibilidad.
-- Los parámetros avanzados están en la sección `Detection` de `settings.json`.
+- Configurable global shortcut (Ctrl, Alt, Shift, or Win plus a key) to open or close the panel even while another app is active.
+- Optional startup with Windows.
+- Allow or disable manual panel movement by dragging its title bar.
+- Remember the last selected category when reopening the panel.
+- Interface language: System, Español, or English. The language is applied when saved; reopen Settings to refresh every label in the Settings window.
+- Accessibility: high-contrast mode and shortcut numbers on icons.
+- **About…:** version, license, third-party credits, and privacy note (also available from the system tray menu).
+- Stop microphone capture, restore default settings, or close ClapPanel. Restoring defaults also removes custom shortcuts and profiles.
 
-## Estructura del proyecto
+### Microphone
 
-```
+- Select the microphone and adjust detection sensitivity.
+- Live monitor for raw input peak and average levels, plus the filtered level used by the clap detector.
+- Diagnostics for capture state, low or missing signal, input device name, sample rate, channels, and errors that prevent capture from starting. Use **Test microphone** to start or temporarily switch the input device.
+- Run the assisted calibration wizard.
+
+### Appearance
+
+- System, light, or dark theme; background color and accent color.
+- Base panel opacity and optional reduced opacity when the pointer is outside the panel.
+- Configurable delay before reduced opacity takes effect (0–5 seconds).
+- Optional smooth 220 ms fade when switching between active and inactive opacity. Disable **Animate opacity transitions smoothly** to apply the opacity change immediately.
+- Icon size, visible names, and rounded corners.
+- Configurable opening and closing animation: none, fade, scale, slide, drop in from the top, soft bounce zoom, or light bounce.
+- Visual profiles that save and restore the appearance, number of columns, and full-screen mode.
+
+### Position and monitors
+
+- Select the monitor. Each display remembers its last manual position and its horizontal and vertical sizes.
+- Initial position in any of the four corners or in the center.
+- Optional docking to the left, right, top, or bottom edge. Docking to the left or right switches the panel to a vertical layout.
+- **Full screen:** the panel fills the selected monitor. Movement, resizing, and automatic hiding are disabled in this mode.
+- **Automatic hiding / smart dock:** configurable from 1 to 30 seconds. Choose 1–12 visible shortcuts and optionally place favorites first while preserving manual order within each group. Left/right docking uses one vertical column; top/bottom docking uses one horizontal row. The screen-edge reveal zone can also be adjusted from 4 to 40 pixels. The panel reappears when the pointer approaches the relevant edge.
+
+## Calibration
+
+In **Settings → Microphone**, select **Calibrate…** to open a three-step wizard:
+
+1. **Silence (3 seconds):** measures background noise.
+2. **Voice (4 seconds):** measures how strongly your voice is registered after the low-frequency filter.
+3. **Claps (up to 14 seconds):** four double claps, with a one-second pause between each pair.
+
+The wizard calculates a sensitivity value and tests it by replaying the recorded audio through the actual detector. It reports how many double claps were detected and whether any false triggers occurred. Applying the result updates the sensitivity value; select **Save** to keep it.
+
+## Detection
+
+- Low frequencies associated with speech are filtered before the sound is analyzed.
+- A clap must produce a sharp peak: a sudden rise followed by a rapid fall.
+- There must be silence before the first clap and between the two claps.
+- Both claps should have similar strength.
+- The threshold adapts to ambient noise and never drops below the level set by the sensitivity control.
+- Advanced parameters are available in the `Detection` section of `settings.json`.
+
+## Project structure
+
+```text
 ClapPanel/
 ├── src/ClapPanel/
-│   ├── Audio/         captura del micrófono
-│   ├── Calibration/   asistente de calibración
-│   ├── Detection/     filtro y detector de doble aplauso
-│   ├── Launcher/      apertura de destinos, imágenes e iconos
-│   ├── Resources/     tema visual compartido
-│   ├── Settings/      modelos y almacenamiento de la configuración
-│   ├── Startup/       inicio con Windows
-│   ├── Theming/       paleta, diseño y posición del panel
-│   ├── Tray/          icono de la bandeja
-│   └── Views/         panel, ajustes, calibración y diálogos
+│   ├── Audio/         microphone capture
+│   ├── Calibration/   calibration wizard
+│   ├── Detection/     double-clap filter and detector
+│   ├── Launcher/      targets, images, icons, and installed apps
+│   ├── Localization/  Spanish and English text
+│   ├── Resources/     shared visual theme
+│   ├── Settings/      settings models and storage
+│   ├── Startup/       Windows startup and global hotkeys
+│   ├── Theming/       panel palette, layout, and positioning
+│   ├── Tray/          system tray icon
+│   ├── Views/         panel, settings, calibration, and dialogs
+│   └── Widgets/       clock, clipboard, and media keys
 ├── tests/ClapPanel.Tests/
-├── CHANGELOG.md
+├── CHANGELOG.md       (Español)
+├── CHANGELOG.en.md    (English)
 ├── LICENSE
-└── README.md
+├── README.md
+└── THIRD-PARTY-NOTICES.md
 ```
 
-## Pruebas
+## Tests
 
-```
+```powershell
 dotnet test
 ```
 
-## Licencia
+## Privacy
 
-Este proyecto se distribuye bajo la GNU General Public License v3.0 o posterior (GPL-3.0-or-later). Copyright (C) 2026 Ridol-HK. Consulta el archivo `LICENSE`.
+Microphone audio is analyzed in real time to detect claps. It is not saved to disk or sent anywhere. Calibration keeps recorded audio in memory only while the calibration wizard is open.
 
-## Datos personales
+## License
 
-La configuración y las imágenes de los iconos se guardan en `%APPDATA%\ClapPanel\` y no forman parte del repositorio.
+ClapPanel is distributed under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**. Copyright (C) 2026 Ridol-HK. See `LICENSE`. Third-party components are listed in `THIRD-PARTY-NOTICES.md`.
+
+## Personal data
+
+Configuration and icon images are stored in `%APPDATA%\ClapPanel\` and are not part of the repository.

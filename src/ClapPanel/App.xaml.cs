@@ -12,11 +12,13 @@ using System.Windows;
 using ClapPanel.Audio;
 using ClapPanel.Detection;
 using ClapPanel.Launcher;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 using ClapPanel.Startup;
 using ClapPanel.Tray;
 using ClapPanel.Theming;
 using ClapPanel.Views;
+using ClapPanel.Widgets;
 
 namespace ClapPanel;
 
@@ -28,6 +30,9 @@ public partial class App : Application
     private readonly IconProvider _icons = new();
     private readonly ImageStore _imageStore = new();
     private readonly MicrophoneService _microphone;
+    private readonly ClipboardHistory _clipboardHistory = new();
+    private readonly GlobalHotkeyService _globalHotkey = new();
+    private readonly ClipboardMonitor _clipboardMonitor;
 
     private DetectionOptions _options = new();
     private ClapDetector _detector = null!;
@@ -44,6 +49,8 @@ public partial class App : Application
     public App()
     {
         _microphone = new MicrophoneService(_devices);
+        _clipboardMonitor = new ClipboardMonitor(_clipboardHistory);
+        _globalHotkey.Pressed += (_, _) => Dispatcher.BeginInvoke(new Action(TogglePanel));
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -58,6 +65,7 @@ public partial class App : Application
         }
 
         _settings = _settingsService.Load();
+        Loc.SetLanguage(_settings.Language);
         AppearancePalette.From(_settings.Appearance).Apply(Resources);
         _options = _settings.Detection;
         _detector = new ClapDetector(_options);
@@ -73,14 +81,33 @@ public partial class App : Application
             _paused = paused;
             ApplyAudio();
         };
+        _tray.AboutRequested += (_, _) => OpenAbout();
         _tray.ExitRequested += (_, _) => Shutdown();
 
+        ApplyWidgetServices();
         ApplyAudio();
+
+        if (!_settings.FirstRunCompleted)
+        {
+            _detector.Muted = true;
+            var setup = new FirstRunWindow(_settings, _devices, _microphone);
+            setup.ShowDialog();
+            _detector.Muted = false;
+            if (setup.Result is { } configuredSettings)
+            {
+                SaveSettings(configuredSettings);
+            }
+        }
+
+        ApplyAudio();
+        ApplyGlobalHotkey();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _globalHotkey.Dispose();
         _tray?.Dispose();
+        _clipboardMonitor.Dispose();
         _microphone.Dispose();
         _devices.Dispose();
         if (_ownsMutex)
@@ -162,7 +189,12 @@ public partial class App : Application
             GetSavedPanelSize(verticalDocked: false),
             GetSavedPanelSize(verticalDocked: true),
             PersistPanelDockEdge,
-            PersistPanelSize);
+            PersistPanelSize,
+            _settings.Widgets,
+            _clipboardHistory,
+            PersistNotes,
+            _settings.RememberCategorySelection ? _settings.LastSelectedCategory : "",
+            PersistCategoryFilter);
         _panel.Closed += (_, _) => _panel = null;
         _panel.Show();
         _panel.Activate();
@@ -181,18 +213,26 @@ public partial class App : Application
             return;
         }
 
+        _globalHotkey.Suspend();
         _settingsWindow = new SettingsWindow(
             _settings,
             _devices,
+            _microphone,
             _detector,
             _imageStore,
             _icons,
             SaveSettings,
             PreviewAppearance,
             StopMicrophoneCapture,
+            TestMicrophone,
             () => Shutdown(),
             selectAppearance);
-        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Closed += (_, _) =>
+        {
+            _settingsWindow = null;
+            ApplyAudio();
+            ApplyGlobalHotkey();
+        };
 
         // Keep auto-hide paused while any settings window is open so the panel
         // does not disappear while the user is changing its appearance.
@@ -348,22 +388,98 @@ public partial class App : Application
         }
     }
 
+    private void ApplyWidgetServices()
+    {
+        var widgets = _settings.Widgets;
+        _clipboardHistory.MaxItems = widgets.ClipboardMaxItems;
+
+        if (widgets.ShowClipboard)
+        {
+            _clipboardMonitor.Start();
+        }
+        else
+        {
+            _clipboardMonitor.Stop();
+            _clipboardHistory.Clear();
+        }
+    }
+
+    private void PersistNotes(string notes)
+    {
+        _settings.Widgets.Notes = notes;
+        _settingsService.Save(_settings);
+    }
+
+    private void PersistCategoryFilter(string category)
+    {
+        if (!_settings.RememberCategorySelection)
+        {
+            return;
+        }
+
+        _settings.LastSelectedCategory = category;
+        _settingsService.Save(_settings);
+    }
+
+    private void OpenAbout()
+    {
+        var about = new AboutWindow();
+        var owner = (Window?)_settingsWindow ?? _panel;
+        if (owner is not null)
+        {
+            about.Owner = owner;
+        }
+
+        about.ShowDialog();
+    }
+
+    private void TestMicrophone(string? deviceId)
+    {
+        // Settings can temporarily test another input. ApplyAudio restores the
+        // saved device (or the paused state) when the Settings window closes.
+        _microphone.Start(deviceId);
+    }
+
+    private void ApplyGlobalHotkey()
+    {
+        if (!_globalHotkey.Apply(_settings.GlobalShortcut ?? new GlobalShortcutSettings()))
+        {
+            _tray?.ShowNotification(
+                "ClapPanel",
+                Loc.Format("Settings.GlobalShortcutRegistrationFailed", _globalHotkey.LastErrorCode),
+                Forms.ToolTipIcon.Warning);
+        }
+    }
+
     private void SaveSettings(AppSettings settings)
     {
+        var languageChanged = settings.Language != _settings.Language;
         _settings = settings;
+        Loc.SetLanguage(settings.Language);
+        _tray?.ApplyLanguage();
         AppearancePalette.From(settings.Appearance).Apply(Resources);
         _settingsService.Save(settings);
+        ApplyWidgetServices();
 
         // The detector keeps the original options object, so copy the saved values into it.
         _options.CopyFrom(settings.Detection);
 
         // Reflect saved panel settings immediately without requiring a close/reopen.
-        _panel?.ApplySettings(
-            settings.Items,
-            settings.Columns,
-            settings.Appearance,
-            GetSavedPanelPosition(),
-            settings.AllowPanelMovement);
+        if (languageChanged)
+        {
+            _panel?.Close();
+        }
+        else
+        {
+            _panel?.ApplySettings(
+                settings.Items,
+                settings.Columns,
+                settings.Appearance,
+                GetSavedPanelPosition(),
+                settings.AllowPanelMovement,
+                settings.RememberCategorySelection ? settings.LastSelectedCategory : "");
+            _panel?.ApplyWidgets(settings.Widgets);
+        }
 
         _imageStore.Cleanup(FlattenItems(settings.Items).Select(item => item.ImagePath));
         StartupManager.SetEnabled(settings.StartWithWindows);

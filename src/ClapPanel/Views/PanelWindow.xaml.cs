@@ -19,8 +19,10 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using ClapPanel.Launcher;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 using ClapPanel.Theming;
+using ClapPanel.Widgets;
 using Forms = System.Windows.Forms;
 using Drawing = System.Drawing;
 
@@ -31,13 +33,13 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
     private const double Gap = 16;
     private const double SnapDistance = 30;
     private const double DockInset = 4;
+    private static readonly TimeSpan InactiveOpacityTransitionDuration = TimeSpan.FromMilliseconds(220);
 
     [DllImport("user32.dll")]
     private static extern IntPtr MonitorFromPoint(Drawing.Point point, uint flags);
 
     [DllImport("shcore.dll")]
     private static extern int GetDpiForMonitor(IntPtr monitor, int dpiType, out uint dpiX, out uint dpiY);
-    private const int RevealThresholdPixels = 12;
 
     private readonly ObservableCollection<PanelTile> _tiles = new();
     private AppearanceSettings _appearance;
@@ -61,13 +63,21 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
     private Point _dragStart;
     private int _configuredColumns;
     private string _searchTerm = "";
-    private string _categoryFilter = "Todas";
+    private string _categoryFilter = AllLabel;
     private bool _favoritesOnly;
     private bool _uiReady;
     private bool _isAutoHidden;
     private bool _autoHideSuspended;
     private bool _isClosingAnimated;
     private DateTime _lastInteractionUtc = DateTime.UtcNow;
+    private DateTime _lastKeyboardInteractionUtc = DateTime.MinValue;
+    private readonly ClipboardHistory _clipboard;
+    private readonly Action<string> _onNotesChanged;
+    private readonly Action<string> _onCategoryFilterChanged;
+    private readonly DispatcherTimer _dynamicOpacityTimer;
+    private int _opacityAnimationGeneration;
+
+    private static string AllLabel => Loc.Get("Panel.AllCategories");
 
     public PanelWindow(
         IReadOnlyList<PanelItem> items,
@@ -83,8 +93,17 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         Size? savedHorizontalSize,
         Size? savedVerticalSize,
         Action<PanelDockEdge> onDockEdgeChanged,
-        Action<Size, bool> onSizeChanged)
+        Action<Size, bool> onSizeChanged,
+        WidgetSettings widgets,
+        ClipboardHistory clipboard,
+        Action<string> onNotesChanged,
+        string? savedCategoryFilter,
+        Action<string> onCategoryFilterChanged)
     {
+        _clipboard = clipboard;
+        _onNotesChanged = onNotesChanged;
+        _onCategoryFilterChanged = onCategoryFilterChanged;
+        _categoryFilter = string.IsNullOrWhiteSpace(savedCategoryFilter) ? AllLabel : savedCategoryFilter;
         _appearance = appearance.Clone();
         _launcher = launcher;
         _icons = icons;
@@ -106,6 +125,31 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
             Interval = TimeSpan.FromMilliseconds(200)
         };
         _autoHideTimer.Tick += AutoHideTimer_Tick;
+        _dynamicOpacityTimer = new DispatcherTimer(DispatcherPriority.Background);
+        _dynamicOpacityTimer.Tick += (_, _) =>
+        {
+            _dynamicOpacityTimer.Stop();
+            if (IsMouseOver || AppearancePalette.UsesHighContrast(_appearance) || !_appearance.DynamicTransparency)
+            {
+                return;
+            }
+
+            // A recent arrow-key press counts as activity even with the pointer
+            // outside. Give keyboard navigation a short grace period, then let
+            // the regular inactive opacity take effect if no more keys arrive.
+            var keyboardGrace = TimeSpan.FromSeconds(Math.Max(
+                0.5,
+                Math.Clamp(_appearance.InactiveOpacityDelaySeconds, 0, 5)));
+            var keyboardIdle = DateTime.UtcNow - _lastKeyboardInteractionUtc;
+            if (_lastKeyboardInteractionUtc != DateTime.MinValue && keyboardIdle < keyboardGrace)
+            {
+                _dynamicOpacityTimer.Interval = keyboardGrace - keyboardIdle;
+                _dynamicOpacityTimer.Start();
+                return;
+            }
+
+            ApplyInactiveOpacity();
+        };
 
         IconSize = AppearanceLayout.IconSize(_appearance);
         TileSize = AppearanceLayout.TileSize(_appearance);
@@ -125,6 +169,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         UpdateDockLayout();
         RefreshCategoryOptions();
         RefreshTiles();
+        WidgetsHost.Initialize(widgets, _clipboard, _onNotesChanged);
 
         Loaded += OnLoaded;
         ContentRendered += OnContentRendered;
@@ -132,7 +177,13 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         MouseEnter += (_, _) => RegisterInteraction(true);
         MouseLeave += (_, _) => RegisterInteraction(false);
         PreviewMouseMove += (_, _) => RegisterInteraction(true);
-        Closed += (_, _) => _autoHideTimer.Stop();
+        Closed += (_, _) =>
+        {
+            _autoHideTimer.Stop();
+            _dynamicOpacityTimer.Stop();
+            _announceTimer?.Stop();
+            WidgetsHost.Shutdown();
+        };
     }
 
     public bool IsAutoHidden => _isAutoHidden;
@@ -151,12 +202,17 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     public CornerRadius TileRadius { get; private set; }
 
+    public double TileBorderThickness => AppearancePalette.UsesHighContrast(_appearance) ? 2 : 1;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public void ApplyAppearance(AppearanceSettings appearance, int? columns = null, Point? customPosition = null)
     {
         var wasFullScreen = _appearance.FullScreen;
         var wasVerticalLayout = UsesVerticalLayout;
+        var wasSmartDockActive = IsSmartDockActive;
+        var oldSmartDockVisibleItems = _appearance.SmartDockVisibleItems;
+        var oldSmartDockPrioritizeFavorites = _appearance.SmartDockPrioritizeFavorites;
         var oldAnimationStyle = _appearance.AnimationStyle;
         _appearance = appearance.Clone();
         _customPosition = customPosition;
@@ -230,6 +286,20 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
             TileRadius = AppearanceLayout.TileRadius(_appearance);
         }
 
+        var smartDockLayoutChanged = wasSmartDockActive != IsSmartDockActive
+            || (IsSmartDockActive && (oldSmartDockVisibleItems != _appearance.SmartDockVisibleItems
+                || oldSmartDockPrioritizeFavorites != _appearance.SmartDockPrioritizeFavorites));
+        if (_uiReady && smartDockLayoutChanged)
+        {
+            RefreshTiles();
+            if (_initialSizingCompleted)
+            {
+                // Recalculate the compact layout immediately when its item count
+                // or favorite ordering changes while the panel is already open.
+                SetWindowSize(CurrentWindowSize());
+            }
+        }
+
         RecalculateColumns(_tiles.Count);
         NotifyAppearanceProperties();
         AppearancePalette.From(_appearance).Apply(Resources);
@@ -251,7 +321,8 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         int columns,
         AppearanceSettings appearance,
         Point? customPosition,
-        bool allowPanelMovement)
+        bool allowPanelMovement,
+        string? savedCategoryFilter)
     {
         _rootItems = items as List<PanelItem> ?? items.ToList();
         _currentItems = _rootItems;
@@ -259,6 +330,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         _configuredColumns = columns;
         _allowPanelMovement = allowPanelMovement;
         _customPosition = customPosition;
+        _categoryFilter = string.IsNullOrWhiteSpace(savedCategoryFilter) ? AllLabel : savedCategoryFilter;
         UpdateMoveHandle();
         UpdateFolderNavigation();
         RefreshCategoryOptions();
@@ -367,8 +439,20 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         var workArea = _appearance.FullScreen ? GetSelectedScreenBounds() : GetSelectedWorkArea();
         MaxWidth = Math.Max(1, workArea.Width - (_appearance.FullScreen ? 0 : 2 * Gap));
         MaxHeight = Math.Max(1, workArea.Height - (_appearance.FullScreen ? 0 : 2 * Gap));
-        MinWidth = _appearance.FullScreen ? 1 : Math.Min(UsesVerticalLayout ? 150 : 240, MaxWidth);
-        MinHeight = _appearance.FullScreen ? 1 : Math.Min(140, MaxHeight);
+        MinWidth = _appearance.FullScreen
+            ? 1
+            : Math.Min(IsSmartDockActive && !UsesVerticalLayout ? SmartDockRequiredHorizontalWidth() : UsesVerticalLayout ? 150 : 240, MaxWidth);
+        MinHeight = _appearance.FullScreen
+            ? 1
+            : Math.Min(IsSmartDockActive && UsesVerticalLayout ? SmartDockRequiredVerticalHeight() : 140, MaxHeight);
+
+        if (IsSmartDockActive)
+        {
+            // Left/right docks display a vertical stack; top/bottom docks display
+            // one horizontal row. RefreshTiles limits the corresponding items to the configured count.
+            Columns = UsesVerticalLayout ? 1 : SmartDockVisibleItemLimit;
+            return;
+        }
 
         if (UsesVerticalLayout)
         {
@@ -395,22 +479,36 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
     // when the saved docking preference is a vertical screen edge.
     private bool UsesVerticalLayout => !_appearance.FullScreen && _isVerticalDocked;
 
+    // Automatic hiding turns the panel into a compact edge menu with a configurable
+    // shortcut limit. Its orientation follows the selected docking edge.
+    private bool IsSmartDockActive => _appearance.AutoHide && !_appearance.FullScreen;
+
+    private int SmartDockVisibleItemLimit => Math.Clamp(_appearance.SmartDockVisibleItems, 1, 12);
+
+    private int RevealThresholdPixels => Math.Clamp(_appearance.SmartDockRevealThresholdPixels, 4, 40);
+
     private Size CurrentWindowSize() => new(
         double.IsFinite(Width) && Width > 0 ? Width : Math.Max(150, ActualWidth),
         double.IsFinite(Height) && Height > 0 ? Height : Math.Max(140, ActualHeight));
+
+    private double SmartDockRequiredHorizontalWidth() => TileSize * SmartDockVisibleItemLimit + 72;
+
+    private double SmartDockRequiredVerticalHeight() => TileSize * SmartDockVisibleItemLimit + 150;
 
     private Size CreateDefaultVerticalSize()
     {
         var area = GetSelectedWorkArea();
         var width = Math.Max(165, TileSize + 62);
-        var height = Math.Max(360, ActualHeight);
+        var minimumHeight = IsSmartDockActive ? SmartDockRequiredVerticalHeight() : 360;
+        var height = Math.Max(minimumHeight, ActualHeight);
         return new Size(Math.Min(width, area.Width), Math.Min(height, area.Height));
     }
 
     private Size CreateDefaultHorizontalSize()
     {
         var area = GetSelectedWorkArea();
-        var width = Math.Max(340, TileSize * Math.Clamp(_configuredColumns, 2, 5) + 72);
+        var columns = IsSmartDockActive ? SmartDockVisibleItemLimit : Math.Clamp(_configuredColumns, 2, 5);
+        var width = Math.Max(340, TileSize * columns + 72);
         var height = Math.Max(250, ActualHeight);
         return new Size(Math.Min(width, area.Width), Math.Min(height, area.Height));
     }
@@ -420,8 +518,12 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         var area = GetSelectedWorkArea();
         var maxWidth = Math.Max(150, area.Width - 2 * Gap);
         var maxHeight = Math.Max(140, area.Height - 2 * Gap);
-        var minWidth = Math.Min(UsesVerticalLayout ? 150 : 240, maxWidth);
-        var minHeight = Math.Min(140, maxHeight);
+        var minWidth = Math.Min(
+            IsSmartDockActive && !UsesVerticalLayout ? SmartDockRequiredHorizontalWidth() : UsesVerticalLayout ? 150 : 240,
+            maxWidth);
+        var minHeight = Math.Min(
+            IsSmartDockActive && UsesVerticalLayout ? SmartDockRequiredVerticalHeight() : 140,
+            maxHeight);
         MinWidth = minWidth;
         MinHeight = minHeight;
         Width = Math.Clamp(requested.Width, minWidth, maxWidth);
@@ -544,6 +646,7 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(NameVisibility));
         OnPropertyChanged(nameof(PanelRadius));
         OnPropertyChanged(nameof(TileRadius));
+        OnPropertyChanged(nameof(TileBorderThickness));
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
@@ -553,12 +656,14 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
     {
         Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(PlacePanel));
         UpdateMoveHandle();
-        SetDynamicOpacity(true);
+        SetDynamicOpacity(IsMouseOver);
         UpdateAutoHideTimer();
         if (EffectiveAnimationStyle != PanelAnimationStyle.None)
         {
             PlayEntranceAnimation();
         }
+
+        FocusFirstTileDeferred();
     }
 
     private void PlayEntranceAnimation()
@@ -652,12 +757,11 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
     private void PanelWindow_KeyDown(object sender, KeyEventArgs e)
     {
-        if (!_appearance.FullScreen || e.Key != Key.Escape)
+        if (e.Key != Key.Escape)
         {
             return;
         }
 
-        // Let users clear the search first; a second Escape closes the full-screen menu.
         if (!string.IsNullOrEmpty(SearchBox.Text))
         {
             SearchBox.Clear();
@@ -676,10 +780,10 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         {
             MoveHandle.Cursor = _allowPanelMovement && !_appearance.FullScreen ? Cursors.SizeAll : Cursors.Arrow;
             MoveHandle.ToolTip = _appearance.FullScreen
-                ? "Pantalla completa: pulsa Esc para cerrar el menú"
+                ? Loc.Get("Panel.MoveFullScreenTip")
                 : _allowPanelMovement
-                    ? "Arrastrar para mover el panel"
-                    : "El movimiento del panel está desactivado en Ajustes > General";
+                    ? Loc.Get("Panel.MoveTip")
+                    : Loc.Get("Panel.MoveDisabledTip");
         }
     }
 
@@ -783,8 +887,12 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
 
         var maxWidth = Math.Max(150, area.Width - 2 * Gap);
         var maxHeight = Math.Max(140, area.Height - 2 * Gap);
-        var minWidth = Math.Min(_isVerticalDocked ? 150 : 240, maxWidth);
-        var minHeight = Math.Min(140, maxHeight);
+        var minWidth = Math.Min(
+            IsSmartDockActive && !UsesVerticalLayout ? SmartDockRequiredHorizontalWidth() : _isVerticalDocked ? 150 : 240,
+            maxWidth);
+        var minHeight = Math.Min(
+            IsSmartDockActive && UsesVerticalLayout ? SmartDockRequiredVerticalHeight() : 140,
+            maxHeight);
         newWidth = Math.Clamp(newWidth, minWidth, maxWidth);
         newHeight = Math.Clamp(newHeight, minHeight, maxHeight);
 
@@ -1032,13 +1140,84 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void RegisterKeyboardInteraction()
+    {
+        _lastInteractionUtc = DateTime.UtcNow;
+        _lastKeyboardInteractionUtc = _lastInteractionUtc;
+        SetDynamicOpacity(true);
+
+        if (!IsMouseOver && !AppearancePalette.UsesHighContrast(_appearance) && _appearance.DynamicTransparency)
+        {
+            var delay = Math.Max(0.5, Math.Clamp(_appearance.InactiveOpacityDelaySeconds, 0, 5));
+            _dynamicOpacityTimer.Stop();
+            _dynamicOpacityTimer.Interval = TimeSpan.FromSeconds(delay);
+            _dynamicOpacityTimer.Start();
+        }
+    }
+
     private void SetDynamicOpacity(bool active)
     {
         // The configured opacity is already applied to the panel brush. The
         // Window opacity is reserved for the additional inactive-state effect.
-        Opacity = _appearance.DynamicTransparency && !active
-            ? Math.Clamp(_appearance.InactiveOpacity, 0.2, 1.0)
-            : 1.0;
+        if (AppearancePalette.UsesHighContrast(_appearance) || !_appearance.DynamicTransparency)
+        {
+            _dynamicOpacityTimer.Stop();
+            TransitionWindowOpacity(1.0, animate: false);
+            return;
+        }
+
+        if (active)
+        {
+            _dynamicOpacityTimer.Stop();
+            TransitionWindowOpacity(1.0, _appearance.AnimateInactiveOpacity);
+            return;
+        }
+
+        var delay = Math.Clamp(_appearance.InactiveOpacityDelaySeconds, 0, 5);
+        if (delay <= 0)
+        {
+            _dynamicOpacityTimer.Stop();
+            ApplyInactiveOpacity();
+            return;
+        }
+
+        // Keep the panel fully opaque until the configured pointer-idle delay expires.
+        TransitionWindowOpacity(1.0, _appearance.AnimateInactiveOpacity);
+        _dynamicOpacityTimer.Stop();
+        _dynamicOpacityTimer.Interval = TimeSpan.FromSeconds(delay);
+        _dynamicOpacityTimer.Start();
+    }
+
+    private void ApplyInactiveOpacity() =>
+        TransitionWindowOpacity(Math.Clamp(_appearance.InactiveOpacity, 0.2, 1.0), _appearance.AnimateInactiveOpacity);
+
+    private void TransitionWindowOpacity(double target, bool animate)
+    {
+        var current = Opacity;
+        var generation = ++_opacityAnimationGeneration;
+        BeginAnimation(OpacityProperty, null);
+
+        if (!animate || Math.Abs(current - target) < 0.005)
+        {
+            Opacity = target;
+            return;
+        }
+
+        var transition = new DoubleAnimation(current, target, InactiveOpacityTransitionDuration)
+        {
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+        };
+        transition.Completed += (_, _) =>
+        {
+            if (generation != _opacityAnimationGeneration)
+            {
+                return;
+            }
+
+            BeginAnimation(OpacityProperty, null);
+            Opacity = target;
+        };
+        BeginAnimation(OpacityProperty, transition);
     }
 
     private void UpdateAutoHideTimer()
@@ -1196,24 +1375,29 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         }
 
         var categories = FlattenItems(_rootItems)
-            .Select(item => item.Category?.Trim() ?? "")
+            .SelectMany(item => item.Categories)
             .Where(category => category.Length > 0)
             .Distinct(StringComparer.CurrentCultureIgnoreCase)
             .OrderBy(category => category, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
+        var previousFilter = _categoryFilter;
         CategoryCombo.SelectionChanged -= Category_Changed;
         CategoryCombo.Items.Clear();
-        CategoryCombo.Items.Add("Todas");
+        CategoryCombo.Items.Add(AllLabel);
         foreach (var category in categories)
         {
             CategoryCombo.Items.Add(category);
         }
         CategoryCombo.SelectedItem = categories.Contains(_categoryFilter, StringComparer.CurrentCultureIgnoreCase)
             ? _categoryFilter
-            : "Todas";
-        _categoryFilter = CategoryCombo.SelectedItem as string ?? "Todas";
+            : AllLabel;
+        _categoryFilter = CategoryCombo.SelectedItem as string ?? AllLabel;
         CategoryCombo.SelectionChanged += Category_Changed;
+        if (!string.Equals(previousFilter, _categoryFilter, StringComparison.CurrentCultureIgnoreCase))
+        {
+            NotifyCategoryFilterChanged();
+        }
     }
 
     private static IEnumerable<PanelItem> FlattenItems(IEnumerable<PanelItem> items)
@@ -1236,39 +1420,56 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         _tiles.Clear();
         var query = _searchTerm.Trim();
         var parentFolders = _folderStack.Reverse().ToList();
-        var useRecursiveResults = query.Length > 0 || _favoritesOnly || _categoryFilter != "Todas";
-        var candidates = useRecursiveResults
+        var useRecursiveResults = query.Length > 0 || _favoritesOnly || _categoryFilter != AllLabel;
+        IEnumerable<(PanelItem Item, IReadOnlyList<PanelItem> Parents)> candidates = useRecursiveResults
             ? EnumerateItemsWithParents(_currentItems, parentFolders)
             : _currentItems.Select(item => (Item: item, Parents: (IReadOnlyList<PanelItem>)parentFolders));
+        if (IsSmartDockActive && _appearance.SmartDockPrioritizeFavorites)
+        {
+            // OrderBy is stable: favorites move first while each group keeps
+            // the user's manually configured shortcut order.
+            candidates = candidates.OrderByDescending(candidate => candidate.Item.IsFavorite);
+        }
 
         foreach (var candidate in candidates)
         {
             var item = candidate.Item;
-            var matchesCategory = _categoryFilter == "Todas"
-                || string.Equals(item.Category, _categoryFilter, StringComparison.CurrentCultureIgnoreCase);
+            var matchesCategory = _categoryFilter == AllLabel
+                || item.Categories.Any(category => string.Equals(category, _categoryFilter, StringComparison.CurrentCultureIgnoreCase));
             var matchesFavorite = !_favoritesOnly || item.IsFavorite;
             var matchesSearch = query.Length == 0
                 || (item.Name ?? "").Contains(query, StringComparison.CurrentCultureIgnoreCase)
                 || (item.Target ?? "").Contains(query, StringComparison.CurrentCultureIgnoreCase)
-                || (item.Category ?? "").Contains(query, StringComparison.CurrentCultureIgnoreCase);
+                || item.Categories.Any(category => category.Contains(query, StringComparison.CurrentCultureIgnoreCase));
 
             if (!matchesCategory || !matchesFavorite || !matchesSearch)
             {
                 continue;
             }
 
+            if (IsSmartDockActive && _tiles.Count >= SmartDockVisibleItemLimit)
+            {
+                break;
+            }
+
             var missing = !item.IsFolder && !_launcher.Exists(item.Target);
-            _tiles.Add(new PanelTile(item, _icons.Load(item), missing, candidate.Parents));
+            var shortcut = PanelKeyboard.ShortcutLabel(_tiles.Count);
+            _tiles.Add(new PanelTile(item, _icons.Load(item), missing, candidate.Parents)
+            {
+                ShortcutNumber = shortcut,
+                ShortcutBadge = _appearance.ShowShortcutNumbers ? shortcut : ""
+            });
         }
 
         EmptyText.Text = _currentItems.Count == 0 && !useRecursiveResults
-            ? "Esta carpeta está vacía. Añade accesos directos desde Ajustes o arrastra elementos aquí."
-            : "No hay elementos que coincidan con la búsqueda o los filtros.";
+            ? Loc.Get("Panel.FolderEmpty")
+            : Loc.Get("Panel.NoMatches");
         EmptyText.Visibility = _tiles.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FavoritesButton.IsChecked = _favoritesOnly;
         RecalculateColumns(_tiles.Count);
         OnPropertyChanged(nameof(Columns));
         UpdateLayout();
+        QueueAnnounceResults();
     }
 
     private static IEnumerable<(PanelItem Item, IReadOnlyList<PanelItem> Parents)> EnumerateItemsWithParents(
@@ -1303,9 +1504,13 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         {
             return;
         }
-        _categoryFilter = CategoryCombo.SelectedItem as string ?? "Todas";
+        _categoryFilter = CategoryCombo.SelectedItem as string ?? AllLabel;
+        NotifyCategoryFilterChanged();
         RefreshTiles();
     }
+
+    private void NotifyCategoryFilterChanged() =>
+        _onCategoryFilterChanged(_categoryFilter == AllLabel ? "" : _categoryFilter);
 
     private void Search_TextChanged(object sender, TextChangedEventArgs e)
     {
@@ -1335,15 +1540,19 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
         }
         UpdateFolderNavigation();
         RefreshTiles();
+        FocusFirstTileDeferred();
     }
 
     private void Tile_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: PanelTile tile })
+        if (sender is FrameworkElement { DataContext: PanelTile tile })
         {
-            return;
+            ActivateTile(tile);
         }
+    }
 
+    private void ActivateTile(PanelTile tile)
+    {
         if (tile.Item.IsFolder)
         {
             NavigateToParentFolders(tile.ParentFolders);
@@ -1353,13 +1562,16 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
             _searchTerm = "";
             SearchBox.Text = "";
             UpdateFolderNavigation();
+            _suppressAnnounce = true;
             RefreshTiles();
+            Announce(Loc.Format("Panel.OpenedFolder", tile.Item.Name, tile.Item.Children.Count));
+            FocusFirstTileDeferred();
             return;
         }
 
         if (!_launcher.Launch(tile.Item))
         {
-            MessageBox.Show(this, $"No se pudo abrir \"{tile.Item.Name}\".", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.Format("Panel.OpenError", tile.Item.Name), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -1494,32 +1706,30 @@ public partial class PanelWindow : Window, INotifyPropertyChanged
             target.Item.Children ??= new List<PanelItem>();
             target.Item.Children.Add(source.Item);
         }
-        else if (ReferenceEquals(sourceCollection, targetCollection))
+        else
         {
             var sourceIndex = sourceCollection.IndexOf(source.Item);
             var targetIndex = targetCollection.IndexOf(target.Item);
-            if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex)
+            if (sourceIndex < 0 || targetIndex < 0)
             {
                 return;
             }
+
+            var targetElement = (FrameworkElement)sender;
+            var pointer = e.GetPosition(targetElement);
+            var dropAfterTarget = UsesVerticalLayout
+                ? pointer.Y >= targetElement.ActualHeight / 2
+                : pointer.X >= targetElement.ActualWidth / 2;
+            var insertionIndex = targetIndex + (dropAfterTarget ? 1 : 0);
 
             sourceCollection.RemoveAt(sourceIndex);
-            if (sourceIndex < targetIndex)
+            if (ReferenceEquals(sourceCollection, targetCollection) && sourceIndex < insertionIndex)
             {
-                targetIndex--;
-            }
-            sourceCollection.Insert(targetIndex, source.Item);
-        }
-        else
-        {
-            var targetIndex = targetCollection.IndexOf(target.Item);
-            if (targetIndex < 0)
-            {
-                return;
+                insertionIndex--;
             }
 
-            sourceCollection.Remove(source.Item);
-            targetCollection.Insert(targetIndex, source.Item);
+            insertionIndex = Math.Clamp(insertionIndex, 0, targetCollection.Count);
+            targetCollection.Insert(insertionIndex, source.Item);
         }
 
         RefreshCategoryOptions();

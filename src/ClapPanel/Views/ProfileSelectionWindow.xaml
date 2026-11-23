@@ -6,8 +6,9 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
 <Window x:Class="ClapPanel.Views.ProfileSelectionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:ClapPanel.Localization"
         Style="{StaticResource {x:Type Window}}"
-        Title="Elegir perfil · ClapPanel"
+        Title="{loc:Tr Profile.Title}"
         Width="620"
         Height="520"
         MinWidth="480"
@@ -44,11 +45,11 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                 Padding="18"
                 Margin="0,0,0,12">
             <StackPanel>
-                <TextBlock Text="Elegí tu perfil"
+                <TextBlock Text="{loc:Tr Profile.Heading}"
                            FontSize="22"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextBrush}" />
-                <TextBlock Text="Seleccioná cómo querés que se vea ClapPanel en esta sesión."
+                <TextBlock Text="{loc:Tr Profile.Subtitle}"
                            Margin="0,6,0,0"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource MutedTextBrush}" />
@@ -68,7 +69,7 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                     <DataTemplate>
                         <Button Style="{StaticResource ProfileCardButtonStyle}"
                                 Click="ChooseProfile_Click"
-                                ToolTip="Usar este perfil">
+                                ToolTip="{loc:Tr Profile.UseTip}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="6" />
@@ -87,7 +88,7 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                                     <TextBlock Text="{Binding Summary}"
                                                Margin="0,5,0,0"
                                                Foreground="{DynamicResource MutedTextBrush}" />
-                                    <TextBlock Text="Usar este perfil  ›"
+                                    <TextBlock Text="{loc:Tr Profile.Use}"
                                                Margin="0,10,0,0"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource AccentBrush}" />
@@ -107,13 +108,13 @@ ClapPanel is free software: you can redistribute it and/or modify it under the t
                 Padding="10"
                 Margin="0,12,0,0">
             <DockPanel LastChildFill="False">
-                <TextBlock Text="Podés cambiar de perfil más adelante desde Ajustes → Apariencia."
+                <TextBlock Text="{loc:Tr Profile.Footer}"
                            VerticalAlignment="Center"
                            TextWrapping="Wrap"
                            MaxWidth="350"
                            Foreground="{DynamicResource MutedTextBrush}" />
                 <Button DockPanel.Dock="Right"
-                        Content="Continuar sin cambiar"
+                        Content="{loc:Tr Profile.Continue}"
                         IsCancel="True"
                         Padding="14,7"
                         Margin="12,0,0,0" />

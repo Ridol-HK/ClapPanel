@@ -8,6 +8,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using ClapPanel.Launcher;
+using ClapPanel.Localization;
 using ClapPanel.Settings;
 using Microsoft.Win32;
 using Forms = System.Windows.Forms;
@@ -32,7 +33,7 @@ public partial class ItemEditorWindow : Window
         NameBox.Text = item.Name;
         TargetBox.Text = item.Target;
         ArgumentsBox.Text = item.Arguments;
-        CategoryBox.Text = item.Category;
+        CategoryBox.Text = item.CategoriesText;
         FavoriteCheck.IsChecked = item.IsFavorite;
         FolderCheck.IsChecked = item.IsFolder;
         UpdateItemTypeVisibility();
@@ -46,7 +47,7 @@ public partial class ItemEditorWindow : Window
         var isFolder = FolderCheck.IsChecked == true;
         TargetPanel.Visibility = isFolder ? Visibility.Collapsed : Visibility.Visible;
         ArgumentsPanel.Visibility = isFolder ? Visibility.Collapsed : Visibility.Visible;
-        Title = isFolder ? "Carpeta de ClapPanel" : "Acceso directo";
+        Title = isFolder ? Loc.Get("Editor.TitleFolder") : Loc.Get("Editor.TitleShortcut");
     }
 
     private void FolderType_Changed(object sender, RoutedEventArgs e)
@@ -68,12 +69,27 @@ public partial class ItemEditorWindow : Window
 
     private void Target_TextChanged(object sender, TextChangedEventArgs e) => RefreshPreview();
 
+    private void BrowseInstalled_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new InstalledAppsWindow(_icons) { Owner = this };
+        if (picker.ShowDialog() != true || picker.SelectedApp is not { } app)
+        {
+            return;
+        }
+
+        TargetBox.Text = app.Target;
+        if (string.IsNullOrWhiteSpace(NameBox.Text))
+        {
+            NameBox.Text = app.Name;
+        }
+    }
+
     private void BrowseTarget_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Seleccionar destino",
-            Filter = "Todos los archivos|*.*",
+            Title = Loc.Get("Editor.SelectTarget"),
+            Filter = Loc.Get("Editor.AllFiles"),
             DereferenceLinks = false
         };
 
@@ -93,7 +109,7 @@ public partial class ItemEditorWindow : Window
     {
         using var dialog = new Forms.FolderBrowserDialog
         {
-            Description = "Selecciona la carpeta que quieres abrir desde ClapPanel",
+            Description = Loc.Get("Editor.SelectFolderDesc"),
             UseDescriptionForTitle = true,
             ShowNewFolderButton = false
         };
@@ -114,8 +130,8 @@ public partial class ItemEditorWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Seleccionar imagen",
-            Filter = "Imágenes|*.png;*.jpg;*.jpeg;*.ico;*.bmp"
+            Title = Loc.Get("Editor.SelectImage"),
+            Filter = Loc.Get("Editor.ImagesFilter")
         };
 
         if (dialog.ShowDialog(this) != true)
@@ -139,13 +155,13 @@ public partial class ItemEditorWindow : Window
         var target = TargetBox.Text.Trim();
         if (!isFolder && target.Length == 0)
         {
-            MessageBox.Show(this, "Indica un destino.", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.Get("Editor.NeedTarget"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(NameBox.Text))
         {
-            MessageBox.Show(this, "Indica un nombre para el elemento.", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, Loc.Get("Editor.NeedName"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -155,7 +171,7 @@ public partial class ItemEditorWindow : Window
         }
         catch (Exception)
         {
-            MessageBox.Show(this, "No se pudo copiar la imagen.", "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.Get("Editor.ImageCopyError"), "ClapPanel", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -163,7 +179,7 @@ public partial class ItemEditorWindow : Window
         Result.Target = isFolder ? "" : target;
         Result.Name = NameBox.Text.Trim();
         Result.Arguments = isFolder ? "" : ArgumentsBox.Text.Trim();
-        Result.Category = CategoryBox.Text.Trim();
+        Result.SetCategories(CategoryBox.Text.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         Result.IsFavorite = FavoriteCheck.IsChecked == true;
         Result.Children ??= new System.Collections.Generic.List<PanelItem>();
 

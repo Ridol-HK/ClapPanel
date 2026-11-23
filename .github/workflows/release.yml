@@ -30,7 +30,7 @@ jobs:
 
       - name: Empaquetar
         shell: pwsh
-        run: Compress-Archive -Path publish\ClapPanel.exe, LICENSE, README.md -DestinationPath "ClapPanel-${{ github.ref_name }}-win-x64.zip"
+        run: Compress-Archive -Path publish\ClapPanel.exe, LICENSE, THIRD-PARTY-NOTICES.md, README.md -DestinationPath "ClapPanel-${{ github.ref_name }}-win-x64.zip"
 
       - name: Crear versión en GitHub
         uses: softprops/action-gh-release@v2
